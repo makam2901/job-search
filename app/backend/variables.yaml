@@ -1,0 +1,77 @@
+styles:
+  name:
+    fontsize: 16
+    spaceAfter: 12
+    spaceBefore: 12
+    alignment: center
+    fontName: Helvetica-Bold
+
+  contact:
+    fontsize: 9
+    spaceAfter: 2
+    spaceBefore: 0
+    alignment: center
+    fontName: Helvetica
+
+  header:
+    fontsize: 12
+    spaceAfter: 6
+    spaceBefore: 6
+    fontName: Helvetica-Bold
+
+  coursework:
+    fontsize: 10
+    spaceAfter: 4
+    spaceBefore: 4
+    fontName: Helvetica
+    leftIndent: 20
+
+  bulleted_list:
+    fontsize: 10
+    spaceAfter: 4
+    spaceBefore: 4
+    fontName: Helvetica
+    leftIndent: 20
+    bulletIndent: 10
+
+  content:
+    fontsize: 10
+    spaceAfter: 4
+    spaceBefore: 4
+    fontName: Helvetica
+
+  subheader:
+    fontsize: 11
+    spaceAfter: 4
+    spaceBefore: 4
+    fontName: Helvetica
+
+  horizontal_line:
+    thickness: 0.5
+    spaceAfter: 6
+    spaceBefore: 6
+
+spaces:
+  horizontal:
+    education1: 105
+    education2: 84
+    degree1: 106
+    degree2: 81
+    company1: 105
+    company2: 84
+    company3: 106
+    title1: 106
+    title2: 81
+    title3: 106
+  
+  vertical:
+    between_headers: 0.4
+    between_subheaders: 0.4
+
+    
+
+
+
+
+
+

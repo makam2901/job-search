@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+python-multipart
+pyyaml
+reportlab
+beautifulsoup4
+google-generativeai
+python-dotenv

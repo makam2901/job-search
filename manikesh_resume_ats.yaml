@@ -1,0 +1,88 @@
+name: Sri Manikesh Makam
+contact:
+  email: makamsrimanikesh@outlook.com
+  phone: "+1 (551) 267-5388"
+  location: San Francisco, CA
+  linkedin: https://www.linkedin.com/in/manikesh-makam-31804a210/
+  github: https://github.com/makam2901
+  medium: https://medium.com/@manikeshmakam
+
+summary: >
+  Data Scientist with over three years of experience in Python, SQL, machine learning, data engineering, and statistical modeling.
+  Skilled in designing and deploying scalable ML systems and automating data pipelines to drive measurable business value.
+  Experienced in collaborating with cross-functional stakeholders to deliver insights and build high-impact solutions.
+  Proficient in cloud platforms including AWS and GCP, and familiar with A/B testing, LLM integration, and MLOps practices.
+
+skills:
+  Programming Languages: Python, SQL, R, Bash
+  ML and Modeling: Regression, Classification, Clustering, Time Series Forecasting, NLP, Deep Learning, A/B Testing
+  Libraries and Frameworks: scikit-learn, TensorFlow, PyTorch, XGBoost, CatBoost, pandas, NumPy, Seaborn, Matplotlib
+  Tools and Platforms: Airflow, Spark, Docker, Flask, Selenium, Git, Jupyter, VSCode
+  Cloud and DevOps: AWS (Lambda, S3, Bedrock), GCP (GCS, Composer, Kubernetes), Pinecone
+  Databases: PostgreSQL, MySQL, Microsoft SQL Server, MongoDB
+  Visualization: Tableau, Power BI, Excel, R Shiny
+  Business Skills: KPI Analysis, Process Optimization, Stakeholder Communication, Project Management, Documentation
+
+experience:
+  - title: Data Scientist
+    company: DRINKS
+    location: San Francisco, CA
+    dates: Oct 2024 - Jun 2025
+    bullets:
+      - Built and deployed an AI wine recommendation engine using OpenAI LLMs, RAG, and Flask to automate personalized product suggestions.
+      - Optimized vector search performance with Pinecone and AWS Lambda functions, reducing response time by 80%.
+      - Improved search accuracy by integrating Hugging Face reranker models and incorporating user feedback loops.
+      - Designed workflows with AWS Bedrock agents to retrieve structured information from internal knowledge bases.
+      - Delivered presentations to the CTO and Co-founder and supported integration into the company-wide e-commerce stack.
+
+  - title: Principal Analyst
+    company: AB InBev
+    location: Bangalore, India
+    dates: Aug 2022 - Jun 2024
+    bullets:
+      - Automated manual Excel workflows using Python and VBA, saving over $500,000 in labor costs across reporting cycles.
+      - Created and deployed more than eight Power BI dashboards to monitor executive KPIs and real-time sales performance.
+      - Developed robust ETL pipelines using SQL, Salesforce, and Excel to process and clean over ten business-critical datasets.
+      - Led five structured A/B test cycles for product experimentation, resulting in a 15% improvement in CSAT.
+      - Mentored four analysts and collaborated with stakeholders across finance, sales, and engineering departments.
+
+  - title: Data Science Intern
+    company: Janta Ka Mood
+    location: Kanpur, India
+    dates: May 2021 - Jul 2021
+    bullets:
+      - Processed more than 5.2 million voter records using Microsoft SQL Server to identify regional demographic patterns.
+      - Built interactive dashboards using R Shiny to enable data-driven decisions for political strategy teams.
+
+education:
+  - degree: Master of Science in Data Science
+    school: University of San Francisco
+    location: San Francisco, CA
+    dates: Jul 2024 – Jun 2025
+    details: >
+      Relevant coursework includes Statistical Inference, Machine Learning, Data Acquisition, Distributed Systems, Deep Learning, Time Series Analysis, A/B Testing, and Ethics in AI.
+
+  - degree: Bachelor of Technology in Aerospace Engineering
+    school: Indian Institute of Technology (IIT) Kanpur
+    location: Kanpur, India
+    dates: Jul 2018 – Jun 2022
+
+projects:
+  - title: AI Fantasy Team Predictor
+    dates: Mar 2025 – May 2025
+    bullets:
+      - Developed a full-stack ML application to predict fantasy cricket teams using historical match data and player performance.
+      - Deployed the backend with FastAPI and Kubernetes on GCP and implemented a Streamlit-based frontend for user interaction.
+      - Integrated Gemini LLM through Langchain to answer user queries and provide insights on team selection.
+
+  - title: Longitudinal Growth Forecasting
+    dates: Feb 2025 – Mar 2025
+    bullets:
+      - Predicted child height using Preece-Baines models and trained CatBoost regressors for different age intervals.
+      - Improved RMSE by 18% through hyperparameter tuning and model evaluation using RandomizedSearchCV.
+
+  - title: US Census Data Processing Pipeline
+    dates: Jan 2025
+    bullets:
+      - Built a scalable ETL pipeline to process 650 GB of US Census data using PySpark, Airflow, SQL, and GCP Composer.
+      - Generated feature sets and visual reports to support downstream demographic prediction models.
