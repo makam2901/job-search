@@ -6,13 +6,9 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      # This volume maps the 'applications' folder on your computer to a folder
-      # with the same name inside the container, so generated files persist.
       - ./applications:/app/applications
-
-      # This makes the base resume and variables files available inside the container.
       - ./manikesh_resume_ats.yaml:/app/manikesh_resume_ats.yaml
-      - ./app/backend/variables.yaml:/app/variables.yaml # This line was missing
+      - ./app/backend/variables.yaml:/app/variables.yaml
 
     env_file:
       - ./app/backend/.env

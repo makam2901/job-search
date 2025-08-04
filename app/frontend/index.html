@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ApplySmart - Personal Resume Generator ✨</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
@@ -40,6 +41,27 @@
             </div>
             
             <div id="applicationView" class="hidden h-full flex flex-col">
+                <!-- New Application Form -->
+                <div id="newAppForm" class="hidden p-8">
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-2xl font-semibold mb-4">Create New Application</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="companyName" class="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+                                <input type="text" id="companyName" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label for="roleTitle" class="block text-sm font-medium text-gray-700 mb-1">Role Title</label>
+                                <input type="text" id="roleTitle" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                        </div>
+                        <button id="createApplicationBtn" class="mt-4 bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 transition duration-300 app-button">
+                            Create & Continue
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Main Workspace -->
                 <div id="workspace" class="hidden h-full flex flex-col">
                     <h2 id="workspaceTitle" class="text-3xl font-bold p-8 pb-0 flex-shrink-0"></h2>
                     
@@ -68,9 +90,23 @@
                             <div class="bg-white p-6 rounded-lg shadow-md">
                                 <details open>
                                     <summary class="text-xl font-semibold cursor-pointer">3. Formatting & Spacing Controls</summary>
+                                    
+                                    <div class="mt-4 border-t pt-4 space-y-3">
+                                        <div class="flex items-center space-x-4">
+                                            <label for="configFileUpload" class="bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-700 cursor-pointer app-button">
+                                                Load from File
+                                            </label>
+                                            <input type="file" id="configFileUpload" class="hidden" accept=".yaml,.yml">
+                                            <span id="fileNameDisplay" class="text-sm text-gray-500"></span>
+                                        </div>
+                                        <div class="flex space-x-4">
+                                            <button id="resetConfigBtn" class="bg-gray-400 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-500 app-button">Return to Default</button>
+                                        </div>
+                                    </div>
+
                                     <form id="formattingForm" class="mt-4 space-y-4"></form>
                                     <button id="saveConfigBtn" class="mt-4 bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700 app-button">
-                                        Save Configuration
+                                        Save Configuration for this Application
                                     </button>
                                 </details>
                             </div>
@@ -93,6 +129,10 @@
         const newApplicationBtn = document.getElementById('newApplicationBtn');
         const welcomeView = document.getElementById('welcomeView');
         const applicationView = document.getElementById('applicationView');
+        const newAppForm = document.getElementById('newAppForm');
+        const companyNameInput = document.getElementById('companyName');
+        const roleTitleInput = document.getElementById('roleTitle');
+        const createApplicationBtn = document.getElementById('createApplicationBtn');
         const workspace = document.getElementById('workspace');
         const workspaceTitle = document.getElementById('workspaceTitle');
         const applicationList = document.getElementById('applicationList');
@@ -105,11 +145,16 @@
         const pdfViewer = document.getElementById('pdfViewer');
         const formattingForm = document.getElementById('formattingForm');
         const saveConfigBtn = document.getElementById('saveConfigBtn');
+        const configFileUpload = document.getElementById('configFileUpload');
+        const fileNameDisplay = document.getElementById('fileNameDisplay');
+        const resetConfigBtn = document.getElementById('resetConfigBtn');
 
         // --- State & Config ---
         let applications = {};
         let currentAppId = null;
         let currentResumeYaml = '';
+        let globalDefaultVars = {};
+        let appSpecificVars = {};
         let renderTimeout;
         const API_BASE_URL = 'http://localhost:8000';
 
@@ -136,6 +181,7 @@
         }
 
         const populateFormattingForm = (vars, parentKey = '', container) => {
+            container.innerHTML = ''; // Clear existing form
             for (const key in vars) {
                 const value = vars[key];
                 const currentKey = parentKey ? `${parentKey}-${key}` : key;
@@ -188,9 +234,9 @@
             }
             return result;
         };
-
+        
         const mergeVariables = (defaults, overrides) => {
-            const merged = { ...defaults };
+            const merged = JSON.parse(JSON.stringify(defaults)); // Deep copy
             for (const key in overrides) {
                 if (overrides.hasOwnProperty(key)) {
                     if (typeof merged[key] === 'object' && merged[key] !== null && !Array.isArray(merged[key]) && typeof overrides[key] === 'object') {
@@ -226,17 +272,24 @@
             const app = applications[appId];
             welcomeView.classList.add('hidden');
             applicationView.classList.remove('hidden');
+            newAppForm.classList.add('hidden');
             workspace.classList.remove('hidden');
+            
             workspaceTitle.textContent = `${app.company} - ${app.role}`;
             outputSection.style.visibility = 'hidden';
             pdfViewer.src = '';
             yamlStatus.textContent = '';
+            fileNameDisplay.textContent = '';
+            configFileUpload.value = '';
             
             try {
                 const [details, defaultVars] = await Promise.all([
                     apiCall(`/applications/${appId}`),
                     apiCall('/default-variables')
                 ]);
+                
+                globalDefaultVars = defaultVars;
+                appSpecificVars = details.customVariables || {};
                 
                 jobDescriptionEditor.innerHTML = details.jobDescription || '';
                 currentResumeYaml = details.resumeYaml || '';
@@ -245,7 +298,6 @@
                 
                 const finalVars = details.customVariables ? mergeVariables(defaultVars, details.customVariables) : defaultVars;
                 
-                formattingForm.innerHTML = '';
                 populateFormattingForm(finalVars, '', formattingForm);
 
                 if (currentResumeYaml) {
@@ -270,9 +322,27 @@
         // --- Event Listeners ---
         newApplicationBtn.addEventListener('click', () => {
             currentAppId = null;
-            welcomeView.classList.remove('hidden');
-            applicationView.classList.add('hidden');
+            welcomeView.classList.add('hidden');
+            applicationView.classList.remove('hidden');
+            workspace.classList.add('hidden');
+            newAppForm.classList.remove('hidden');
+            
+            companyNameInput.value = '';
+            roleTitleInput.value = '';
+            companyNameInput.focus();
             renderApplicationList();
+        });
+
+        createApplicationBtn.addEventListener('click', async () => {
+            const company = companyNameInput.value.trim();
+            const role = roleTitleInput.value.trim();
+            if (!company || !role) return alert('Please provide both Company Name and Role Title.');
+
+            try {
+                const data = await apiCall('/applications', 'POST', { companyName: company, roleTitle: role });
+                applications[data.appId] = { appId: data.appId, company, role };
+                await selectApplication(data.appId);
+            } catch (error) { /* Handled in apiCall */ }
         });
 
         applicationList.addEventListener('click', (e) => {
@@ -303,11 +373,12 @@
                 currentResumeYaml = result.resumeYaml;
                 yamlStatus.textContent = '✅ Resume YAML generated successfully!';
                 await renderPdf();
+                generateResumeBtn.disabled = false; // Re-enable on success
             } catch (error) {
-                yamlStatus.textContent = '❌ Failed to generate resume YAML.';
+                yamlStatus.textContent = '❌ Failed to generate resume YAML. Check backend logs.';
+                // Button remains disabled on failure
             } finally {
                 toggleSpinner(yamlSpinner, false);
-                generateResumeBtn.disabled = false;
             }
         });
 
@@ -316,10 +387,44 @@
             const variablesToSave = getVariablesFromForm();
             try {
                 await apiCall(`/applications/${currentAppId}/save-variables`, 'POST', { variables: variablesToSave });
+                appSpecificVars = variablesToSave; // Update local state
                 alert('Configuration saved successfully for this application!');
             } catch (error) {
                 alert('Failed to save configuration.');
             }
+        });
+
+        configFileUpload.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const customVars = jsyaml.load(e.target.result);
+                    const finalVars = mergeVariables(globalDefaultVars, customVars);
+                    populateFormattingForm(finalVars, '', formattingForm);
+                    debouncedRender(); // Auto-apply
+                    fileNameDisplay.textContent = `Applied: ${file.name}`;
+                } catch (err) {
+                    alert(`Error parsing YAML file: ${err.message}`);
+                    fileNameDisplay.textContent = 'Invalid file.';
+                }
+            };
+            reader.onerror = () => {
+                alert('Failed to read file.');
+                fileNameDisplay.textContent = 'Error reading file.';
+            };
+            reader.readAsText(file);
+        });
+
+        resetConfigBtn.addEventListener('click', () => {
+            const finalVars = appSpecificVars ? mergeVariables(globalDefaultVars, appSpecificVars) : globalDefaultVars;
+            populateFormattingForm(finalVars, '', formattingForm);
+            debouncedRender();
+            fileNameDisplay.textContent = '';
+            configFileUpload.value = '';
+            alert('Formatting has been reset to the application\'s default.');
         });
 
         formattingForm.addEventListener('input', debouncedRender);

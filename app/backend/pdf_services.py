@@ -40,11 +40,11 @@ class ATSResumePDFGenerator:
     def create_contact_info(self, contact_data):
         contact_parts = []
         if 'location' in contact_data: contact_parts.append(f"{contact_data['location']} (open to relocation)")
-        if 'email' in contact_data: contact_parts.append(f'<link href="mailto:{contact_data["email"]}" color="blue">{contact_data["email"]}</link>')
+        if 'email' in contact_data: contact_parts.append(f'<link href="mailto:{contact_data["email"]}" color="black">{contact_data["email"]}</link>')
         if 'phone' in contact_data: contact_parts.append(contact_data['phone'])
-        if 'linkedin' in contact_data: contact_parts.append(f'<link href="{contact_data["linkedin"]}" color="blue">LinkedIn</link>')
-        if 'github' in contact_data: contact_parts.append(f'<link href="{contact_data["github"]}" color="blue">Github</link>')
-        if 'medium' in contact_data: contact_parts.append(f'<link href="{contact_data["medium"]}" color="blue">Medium</link>')
+        if 'linkedin' in contact_data: contact_parts.append(f"""<link href="{contact_data["linkedin"]}" color="black">{contact_data["linkedin"].split('www.')[1]}</link>""")
+        if 'github' in contact_data: contact_parts.append(f"""<link href="{contact_data["github"]}" color="black">{contact_data["github"].split('://')[1]}</link>""")
+        if 'medium' in contact_data: contact_parts.append(f"""<link href="{contact_data["medium"]}" color="black">{contact_data["medium"].split('://')[1]}</link>""")
         return ' • '.join(contact_parts)
 
     def add_section_header(self, story, title):
