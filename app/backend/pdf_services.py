@@ -75,10 +75,12 @@ class ATSResumePDFGenerator:
         story.append(Paragraph(data['name'], self.styles['Name']))
         story.append(Paragraph(self.create_contact_info(data['contact']), self.styles['Contact']))
 
-        if 'summary' in data and data['summary']:
-            self.add_section_header(story, "Summary")
-            story.append(Paragraph(data['summary'], self.styles['Content']))
-            story.append(Spacer(1, section_gap))
+        # Conditionally add Summary section based on the 'show_summary' flag in variables
+        if self.vars.get("general", {}).get("show_summary", False):
+            if 'summary' in data and data['summary']:
+                self.add_section_header(story, "Summary")
+                story.append(Paragraph(data['summary'], self.styles['Content']))
+                story.append(Spacer(1, section_gap))
 
         if 'education' in data and data['education']:
             self.add_section_header(story, "Education")
@@ -88,7 +90,11 @@ class ATSResumePDFGenerator:
                 story.append(self.create_two_part_line(degree_info, edu['dates'], left_bold=False, separation_key=f"degree{i+1}"))
                 if 'details' in edu:
                     story.append(Paragraph(f"<b>Coursework:</b> {edu['details']}", self.styles['Coursework']))
+                # Add spacer after each education entry, but not the last one
+                if i < len(data['education']) - 1:
+                    story.append(Spacer(1, section_gap))
             story.append(Spacer(1, section_gap))
+
 
         if 'skills' in data and data['skills']:
             self.add_section_header(story, "Technical Skills")
