@@ -122,3 +122,8 @@ projects:
       - Built a Flask web app with HTML/CSS frontend to deliver real-time image colorization through a clean and interactive user interface.
       - Managed model inference, image postprocessing, and file handling in a modular backend architecture, supporting smooth user uploads and downloads.
       - Ensured modular code design, version control, and reproducibility through well-structured GitHub repository and training-validation workflow separation.
+
+certifications:
+  - title: AWS Certified AI Practitioner
+    issuer: Amazon Web Services
+    date: Oct 2024
