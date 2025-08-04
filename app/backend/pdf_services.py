@@ -75,6 +75,11 @@ class ATSResumePDFGenerator:
         story.append(Paragraph(data['name'], self.styles['Name']))
         story.append(Paragraph(self.create_contact_info(data['contact']), self.styles['Contact']))
 
+        if 'summary' in data and data['summary']:
+            self.add_section_header(story, "Summary")
+            story.append(Paragraph(data['summary'], self.styles['Content']))
+            story.append(Spacer(1, section_gap))
+
         if 'education' in data and data['education']:
             self.add_section_header(story, "Education")
             for i, edu in enumerate(data['education']):
@@ -83,13 +88,21 @@ class ATSResumePDFGenerator:
                 story.append(self.create_two_part_line(degree_info, edu['dates'], left_bold=False, separation_key=f"degree{i+1}"))
                 if 'details' in edu:
                     story.append(Paragraph(f"<b>Coursework:</b> {edu['details']}", self.styles['Coursework']))
-                story.append(Spacer(1, section_gap))
+            story.append(Spacer(1, section_gap))
 
         if 'skills' in data and data['skills']:
             self.add_section_header(story, "Technical Skills")
-            for category, skills_list in data['skills'].items():
-                if isinstance(skills_list, list):
-                    story.append(Paragraph(f"<b>{category}:</b> {', '.join(skills_list)}", self.styles['Content']))
+            for category, skills_value in data['skills'].items():
+                skills_text = ""
+                if isinstance(skills_value, list):
+                    skills_text = ', '.join(str(s) for s in skills_value)
+                elif isinstance(skills_value, str):
+                    skills_text = skills_value
+                
+                if skills_text:
+                    story.append(Paragraph(f"<b>{category}:</b> {skills_text}", self.styles['Content']))
+            story.append(Spacer(1, section_gap))
+
 
         if 'experience' in data and data['experience']:
             self.add_section_header(story, "Professional Experience")

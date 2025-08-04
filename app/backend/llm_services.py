@@ -17,14 +17,11 @@ def call_gemini_api(prompt: str, is_json_output: bool = False) -> str:
         if is_json_output:
             generation_config["response_mime_type"] = "application/json"
 
-        model = genai.GenerativeModel('gemini-1.5-pro-latest', generation_config=generation_config)
+        model = genai.GenerativeModel('gemini-2.5-pro', generation_config=generation_config)
         
         response = model.generate_content(prompt)
         
-        text = response.text
-        if is_json_output:
-             text = text.replace("```json", "").replace("```", "").strip()
-        return text
+        return response.text
     except Exception as e:
         print(f"An error occurred with the Gemini API: {e}")
         raise HTTPException(status_code=503, detail=f"An error occurred with the Gemini API: {e}")

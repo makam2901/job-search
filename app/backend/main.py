@@ -20,7 +20,7 @@ load_dotenv()
 app = FastAPI(
     title="ApplySmart Backend",
     description="Manages job applications and renders PDFs with dynamic formatting.",
-    version="8.0.0" # Version bump for saving configurations
+    version="8.1.0" # Version bump for rendering logic update
 )
 
 # --- CORS Middleware ---
@@ -136,13 +136,26 @@ def save_variables(app_id: str, request: SaveVariablesRequest):
 @app.post("/applications/{app_id}/render-pdf")
 def render_pdf(app_id: str, data: RenderRequestData):
     app_path = os.path.join(APPLICATIONS_DIR, app_id)
+    if not os.path.isdir(app_path):
+        raise HTTPException(status_code=404, detail="Application not found.")
+        
     try:
         resume_data = yaml.safe_load(data.resumeYaml)
     except yaml.YAMLError:
         raise HTTPException(status_code=400, detail="Invalid YAML format in resume data.")
 
-    default_vars = load_variables()
-    final_vars = merge_variables(default_vars, data.variables)
+    # Load global defaults
+    final_vars = load_variables()
+    
+    # Load and merge application-specific saved variables
+    custom_vars_path = os.path.join(app_path, "custom_variables.yaml")
+    if os.path.exists(custom_vars_path):
+        with open(custom_vars_path, 'r', encoding='utf-8') as f:
+            app_specific_vars = yaml.safe_load(f)
+            final_vars = merge_variables(final_vars, app_specific_vars)
+
+    # Merge live variables from the request on top of everything
+    final_vars = merge_variables(final_vars, data.variables)
 
     pdf_path = os.path.join(app_path, "tailored_resume.pdf")
     pdf_generator = ATSResumePDFGenerator(variables=final_vars)

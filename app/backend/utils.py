@@ -1,5 +1,6 @@
 import os
 import yaml
+import copy
 from typing import Dict
 
 # --- Constants ---
@@ -23,19 +24,28 @@ def load_variables() -> Dict:
         # Provide a fallback default if the file is missing or corrupt
         print("Warning: variables.yaml not found or is invalid. Using fallback defaults.")
         return {
+            "general": {"show_summary": True},
             "styles": {"name": {"fontsize": 16, "spaceAfter": 12, "fontName": "Helvetica-Bold", "alignment": "center"}},
             "spaces": {"horizontal": {"education1": 105}}
         }
 
-def merge_variables(default_vars: Dict, user_vars: Dict) -> Dict:
-    """Recursively merges user-provided variables into the defaults."""
-    if user_vars is None:
-        return default_vars
-    # Create a deep copy to avoid modifying the original default_vars
-    merged = default_vars.copy()
-    for key, value in user_vars.items():
-        if isinstance(value, dict) and isinstance(merged.get(key), dict):
+def merge_variables(base: Dict, updates: Dict) -> Dict:
+    """
+    Recursively merges the 'updates' dictionary into a deep copy of the 'base' dictionary.
+    This ensures that the base dictionary is not modified and there are no side effects.
+    """
+    # Start with a deep copy of the base to avoid any mutation of the original object.
+    merged = copy.deepcopy(base)
+    
+    if updates is None:
+        return merged
+
+    for key, value in updates.items():
+        # If the key exists in both dictionaries and both values are dictionaries, recurse.
+        if isinstance(value, dict) and key in merged and isinstance(merged.get(key), dict):
             merged[key] = merge_variables(merged[key], value)
         else:
+            # Otherwise, the value from the updates dictionary overwrites the base.
             merged[key] = value
+            
     return merged

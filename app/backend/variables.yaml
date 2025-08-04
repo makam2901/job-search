@@ -1,3 +1,6 @@
+general:
+  show_summary: false
+
 styles:
   name:
     fontsize: 16
@@ -66,4 +69,4 @@ spaces:
   
   vertical:
     # Gap between major entries (e.g., between two jobs) in inches
-    section_gap_inch: 0.15
+    section_gap_inch: 0.02

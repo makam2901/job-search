@@ -159,6 +159,14 @@
         const API_BASE_URL = 'http://localhost:8000';
 
         // --- Helper Functions ---
+        function toggleSpinner(spinnerElement, show) {
+            if (show) {
+                spinnerElement.classList.remove('hidden');
+            } else {
+                spinnerElement.classList.add('hidden');
+            }
+        }
+
         async function apiCall(endpoint, method = 'GET', body = null, isBlob = false) {
             try {
                 const options = { method, headers: {} };
@@ -197,6 +205,22 @@
                     populateFormattingForm(value, currentKey, div);
                     fieldset.appendChild(div);
                     container.appendChild(fieldset);
+                } else if (typeof value === 'boolean') {
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center';
+                    const input = document.createElement('input');
+                    input.type = 'checkbox';
+                    input.id = currentKey;
+                    input.name = currentKey;
+                    input.checked = value;
+                    input.className = 'h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500';
+                    const label = document.createElement('label');
+                    label.htmlFor = currentKey;
+                    label.textContent = key.replace(/_/g, ' ');
+                    label.className = 'ml-2 block text-sm font-medium text-gray-700 capitalize';
+                    div.appendChild(input);
+                    div.appendChild(label);
+                    container.appendChild(div);
                 } else {
                     const div = document.createElement('div');
                     const label = document.createElement('label');
@@ -218,20 +242,26 @@
         };
 
         const getVariablesFromForm = () => {
-            const formData = new FormData(formattingForm);
             const result = {};
-            for (const [key, value] of formData.entries()) {
-                const keys = key.split('-');
+            const inputs = formattingForm.querySelectorAll('input');
+
+            inputs.forEach(input => {
+                const keys = input.name.split('-');
                 let current = result;
                 keys.forEach((k, index) => {
                     if (index === keys.length - 1) {
-                        current[k] = isNaN(parseFloat(value)) ? value : parseFloat(value);
+                        if (input.type === 'checkbox') {
+                            current[k] = input.checked;
+                        } else {
+                            const val = input.value;
+                            current[k] = isNaN(parseFloat(val)) || val.trim() === '' ? val : parseFloat(val);
+                        }
                     } else {
                         current[k] = current[k] || {};
                         current = current[k];
                     }
                 });
-            }
+            });
             return result;
         };
         
@@ -239,7 +269,7 @@
             const merged = JSON.parse(JSON.stringify(defaults)); // Deep copy
             for (const key in overrides) {
                 if (overrides.hasOwnProperty(key)) {
-                    if (typeof merged[key] === 'object' && merged[key] !== null && !Array.isArray(merged[key]) && typeof overrides[key] === 'object') {
+                    if (typeof merged[key] === 'object' && merged[key] !== null && !Array.isArray(merged[key]) && typeof overrides[key] === 'object' && overrides[key] !== null) {
                         merged[key] = mergeVariables(merged[key], overrides[key]);
                     } else {
                         merged[key] = overrides[key];
@@ -296,7 +326,7 @@
                 generateResumeBtn.disabled = !details.jobDescription;
                 yamlStatus.textContent = currentResumeYaml ? 'A tailored resume YAML exists.' : '';
                 
-                const finalVars = details.customVariables ? mergeVariables(defaultVars, details.customVariables) : defaultVars;
+                const finalVars = mergeVariables(defaultVars, details.customVariables || {});
                 
                 populateFormattingForm(finalVars, '', formattingForm);
 
@@ -419,7 +449,7 @@
         });
 
         resetConfigBtn.addEventListener('click', () => {
-            const finalVars = appSpecificVars ? mergeVariables(globalDefaultVars, appSpecificVars) : globalDefaultVars;
+            const finalVars = mergeVariables(globalDefaultVars, appSpecificVars);
             populateFormattingForm(finalVars, '', formattingForm);
             debouncedRender();
             fileNameDisplay.textContent = '';
