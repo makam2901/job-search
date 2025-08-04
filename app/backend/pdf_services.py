@@ -4,9 +4,9 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
+from reportlab.pdfbase import pdfmetrics
 from typing import Dict
 
-# Map string alignment to ReportLab constant
 ALIGNMENT_MAP = {
     "left": TA_LEFT,
     "center": TA_CENTER,
@@ -17,7 +17,21 @@ class ATSResumePDFGenerator:
     def __init__(self, variables: Dict):
         self.vars = variables
         self.styles = getSampleStyleSheet()
+        self.base_font = self.vars.get("font_settings", {}).get("base_font_name", "Helvetica")
+        
+        self.register_font_family(self.base_font)
         self.setup_custom_styles()
+
+    def register_font_family(self, base_font_name: str):
+        """
+        Registers a standard Type 1 font family with its variants using the correct names.
+        """
+        if base_font_name == 'Helvetica':
+            pdfmetrics.registerFontFamily('Helvetica', normal='Helvetica', bold='Helvetica-Bold', italic='Helvetica-Oblique', boldItalic='Helvetica-BoldOblique')
+        elif base_font_name == 'Times-Roman':
+            pdfmetrics.registerFontFamily('Times-Roman', normal='Times-Roman', bold='Times-Bold', italic='Times-Italic', boldItalic='Times-BoldItalic')
+        elif base_font_name == 'Courier':
+            pdfmetrics.registerFontFamily('Courier', normal='Courier', bold='Courier-Bold', italic='Courier-Oblique', boldItalic='Courier-BoldOblique')
 
     def setup_custom_styles(self):
         """Dynamically create styles from the variables dictionary."""
@@ -26,9 +40,9 @@ class ATSResumePDFGenerator:
             alignment = ALIGNMENT_MAP.get(str(properties.get("alignment", "left")).lower(), TA_LEFT)
             
             self.styles.add(ParagraphStyle(
-                name=name.capitalize(), # e.g., 'Name', 'Header'
+                name=name.capitalize(),
                 parent=self.styles['Normal'],
-                fontName=properties.get("fontName", 'Helvetica'),
+                fontName=self.base_font,
                 fontSize=properties.get("fontsize", 10),
                 spaceAfter=properties.get("spaceAfter", 2),
                 spaceBefore=properties.get("spaceBefore", 2),
@@ -72,15 +86,14 @@ class ATSResumePDFGenerator:
         v_spaces = self.vars.get("spaces", {}).get("vertical", {})
         section_gap = v_spaces.get("section_gap_inch", 0.1) * inch
         
-        story.append(Paragraph(data['name'], self.styles['Name']))
+        story.append(Paragraph(f"<b>{data['name']}</b>", self.styles['Name']))
         story.append(Paragraph(self.create_contact_info(data['contact']), self.styles['Contact']))
 
-        # Conditionally add Summary section based on the 'show_summary' flag in variables
-        if self.vars.get("general", {}).get("show_summary", False):
-            if 'summary' in data and data['summary']:
-                self.add_section_header(story, "Summary")
-                story.append(Paragraph(data['summary'], self.styles['Content']))
-                story.append(Spacer(1, section_gap))
+        if 'summary' in data and data['summary']:
+            self.add_section_header(story, "Summary")
+            # Use the new 'Summary' style
+            story.append(Paragraph(data['summary'], self.styles['Summary']))
+            story.append(Spacer(1, section_gap))
 
         if 'education' in data and data['education']:
             self.add_section_header(story, "Education")
@@ -90,11 +103,9 @@ class ATSResumePDFGenerator:
                 story.append(self.create_two_part_line(degree_info, edu['dates'], left_bold=False, separation_key=f"degree{i+1}"))
                 if 'details' in edu:
                     story.append(Paragraph(f"<b>Coursework:</b> {edu['details']}", self.styles['Coursework']))
-                # Add spacer after each education entry, but not the last one
                 if i < len(data['education']) - 1:
                     story.append(Spacer(1, section_gap))
             story.append(Spacer(1, section_gap))
-
 
         if 'skills' in data and data['skills']:
             self.add_section_header(story, "Technical Skills")
@@ -106,9 +117,9 @@ class ATSResumePDFGenerator:
                     skills_text = skills_value
                 
                 if skills_text:
-                    story.append(Paragraph(f"<b>{category}:</b> {skills_text}", self.styles['Content']))
+                    # Use the new dedicated 'Skills' style
+                    story.append(Paragraph(f"• <b>{category}:</b> {skills_text}", self.styles['Skills']))
             story.append(Spacer(1, section_gap))
-
 
         if 'experience' in data and data['experience']:
             self.add_section_header(story, "Professional Experience")

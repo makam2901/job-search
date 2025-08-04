@@ -18,30 +18,48 @@
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #a8a29e; border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #78716c; }
+
+        #sidebar.collapsed {
+            width: 0;
+            padding-left: 0;
+            padding-right: 0;
+            overflow: hidden;
+            border-right-width: 0;
+        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800 overflow-hidden">
 
     <div class="flex h-screen">
         <!-- Sidebar -->
-        <aside class="w-1/4 bg-white border-r border-gray-200 p-6 flex flex-col">
-            <h1 class="text-2xl font-bold text-blue-600 mb-6">ApplySmart ✨</h1>
-            <button id="newApplicationBtn" class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 mb-6 app-button">
-                + New Application
-            </button>
-            <h2 class="text-lg font-semibold mb-3">Applications</h2>
-            <div id="applicationList" class="flex-grow overflow-y-auto pr-2 custom-scrollbar"></div>
+        <aside id="sidebar" class="w-1/4 bg-white border-r border-gray-200 p-6 flex flex-col shrink-0 transition-all duration-300 ease-in-out">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-2xl font-bold text-blue-600">ApplySmart ✨</h1>
+                <button id="sidebarToggle" title="Toggle sidebar" class="text-gray-500 hover:text-gray-800">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                </button>
+            </div>
+            <div class="flex flex-col flex-grow min-h-0">
+                <button id="newApplicationBtn" class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 mb-6 app-button">
+                    + New Application
+                </button>
+                <h2 class="text-lg font-semibold mb-3">Applications</h2>
+                <div id="applicationList" class="flex-grow overflow-y-auto pr-2 custom-scrollbar"></div>
+            </div>
         </aside>
 
+        <button id="sidebarExpander" title="Expand sidebar" class="hidden fixed left-2 top-1/2 -translate-y-1/2 z-20 bg-white p-2 rounded-full shadow-lg hover:bg-gray-100">
+             <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        </button>
+
         <!-- Main Content -->
-        <main class="w-3/4 flex flex-col">
+        <main id="mainContent" class="flex-grow flex flex-col">
             <div id="welcomeView" class="text-center flex flex-col items-center justify-center h-full">
                 <h2 class="text-3xl font-bold mb-2">Welcome to ApplySmart</h2>
                 <p class="text-gray-600 max-w-md">Your AI-powered job application assistant.</p>
             </div>
             
             <div id="applicationView" class="hidden h-full flex flex-col">
-                <!-- New Application Form -->
                 <div id="newAppForm" class="hidden p-8">
                     <div class="bg-white p-6 rounded-lg shadow-md">
                         <h3 class="text-2xl font-semibold mb-4">Create New Application</h3>
@@ -61,7 +79,6 @@
                     </div>
                 </div>
 
-                <!-- Main Workspace -->
                 <div id="workspace" class="hidden h-full flex flex-col">
                     <h2 id="workspaceTitle" class="text-3xl font-bold p-8 pb-0 flex-shrink-0"></h2>
                     
@@ -70,7 +87,7 @@
                         <div class="overflow-y-auto custom-scrollbar pr-4">
                             <div class="bg-white p-6 rounded-lg shadow-md mb-8">
                                 <h3 class="text-xl font-semibold mb-4">1. Job Description</h3>
-                                <div id="jobDescriptionEditor" contenteditable="true" class="w-full border border-gray-300 rounded-lg p-4 min-h-[200px] overflow-y-auto bg-gray-50"></div>
+                                <div id="jobDescriptionEditor" contenteditable="true" class="w-full border border-gray-300 rounded-lg p-4 min-h-[150px] overflow-y-auto bg-gray-50"></div>
                                 <div class="mt-4 flex space-x-4">
                                     <button id="saveJDBtn" class="bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-600 app-button">Save JD</button>
                                 </div>
@@ -86,10 +103,17 @@
                                 </div>
                                  <p id="yamlStatus" class="text-sm text-gray-600 mt-2"></p>
                             </div>
+                            
+                            <div id="contentSelectionWrapper" class="bg-white p-6 rounded-lg shadow-md mb-8 hidden">
+                                <details open>
+                                    <summary class="text-xl font-semibold cursor-pointer">3. Select Content</summary>
+                                    <form id="contentSelectionForm" class="mt-4 border-t pt-4 space-y-2"></form>
+                                </details>
+                            </div>
 
                             <div class="bg-white p-6 rounded-lg shadow-md">
                                 <details open>
-                                    <summary class="text-xl font-semibold cursor-pointer">3. Formatting & Spacing Controls</summary>
+                                    <summary class="text-xl font-semibold cursor-pointer">4. Formatting & Spacing</summary>
                                     
                                     <div class="mt-4 border-t pt-4 space-y-3">
                                         <div class="flex items-center space-x-4">
@@ -98,13 +122,20 @@
                                             </label>
                                             <input type="file" id="configFileUpload" class="hidden" accept=".yaml,.yml">
                                             <span id="fileNameDisplay" class="text-sm text-gray-500"></span>
-                                        </div>
-                                        <div class="flex space-x-4">
                                             <button id="resetConfigBtn" class="bg-gray-400 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-500 app-button">Return to Default</button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Global Font Control -->
+                                    <div id="globalFormattingControls" class="mt-4 space-y-2">
+                                         <div>
+                                            <label for="baseFontName" class="block text-sm font-medium text-gray-700 capitalize">Base Font</label>
+                                            <select id="baseFontName" name="baseFontName" class="mt-1 w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"></select>
                                         </div>
                                     </div>
 
                                     <form id="formattingForm" class="mt-4 space-y-4"></form>
+                                    
                                     <button id="saveConfigBtn" class="mt-4 bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700 app-button">
                                         Save Configuration for this Application
                                     </button>
@@ -148,6 +179,9 @@
         const configFileUpload = document.getElementById('configFileUpload');
         const fileNameDisplay = document.getElementById('fileNameDisplay');
         const resetConfigBtn = document.getElementById('resetConfigBtn');
+        const contentSelectionWrapper = document.getElementById('contentSelectionWrapper');
+        const contentSelectionForm = document.getElementById('contentSelectionForm');
+        const baseFontNameSelect = document.getElementById('baseFontName');
 
         // --- State & Config ---
         let applications = {};
@@ -157,14 +191,11 @@
         let appSpecificVars = {};
         let renderTimeout;
         const API_BASE_URL = 'http://localhost:8000';
+        const AVAILABLE_FONTS = ['Helvetica', 'Times-Roman', 'Courier'];
 
         // --- Helper Functions ---
         function toggleSpinner(spinnerElement, show) {
-            if (show) {
-                spinnerElement.classList.remove('hidden');
-            } else {
-                spinnerElement.classList.add('hidden');
-            }
+            spinnerElement.classList.toggle('hidden', !show);
         }
 
         async function apiCall(endpoint, method = 'GET', body = null, isBlob = false) {
@@ -189,10 +220,13 @@
         }
 
         const populateFormattingForm = (vars, parentKey = '', container) => {
-            container.innerHTML = ''; // Clear existing form
+            container.innerHTML = '';
             for (const key in vars) {
                 const value = vars[key];
                 const currentKey = parentKey ? `${parentKey}-${key}` : key;
+                
+                if(key === 'font_settings') continue; // Skip font settings, handled globally
+
                 if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
                     const fieldset = document.createElement('fieldset');
                     fieldset.className = 'border border-gray-200 p-3 rounded-lg';
@@ -222,11 +256,15 @@
                     div.appendChild(label);
                     container.appendChild(div);
                 } else {
+                    if (key === 'fontName') continue; // Skip individual font names
+
                     const div = document.createElement('div');
                     const label = document.createElement('label');
                     label.htmlFor = currentKey;
                     label.textContent = key.replace(/_/g, ' ');
                     label.className = 'block text-sm font-medium text-gray-700 capitalize';
+                    div.appendChild(label);
+                    
                     const input = document.createElement('input');
                     input.type = typeof value === 'number' ? 'number' : 'text';
                     if(typeof value === 'number') input.step = "any";
@@ -234,7 +272,6 @@
                     input.name = currentKey;
                     input.value = value;
                     input.className = 'mt-1 w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500';
-                    div.appendChild(label);
                     div.appendChild(input);
                     container.appendChild(div);
                 }
@@ -243,8 +280,7 @@
 
         const getVariablesFromForm = () => {
             const result = {};
-            const inputs = formattingForm.querySelectorAll('input');
-
+            const inputs = formattingForm.querySelectorAll('input, select');
             inputs.forEach(input => {
                 const keys = input.name.split('-');
                 let current = result;
@@ -254,7 +290,7 @@
                             current[k] = input.checked;
                         } else {
                             const val = input.value;
-                            current[k] = isNaN(parseFloat(val)) || val.trim() === '' ? val : parseFloat(val);
+                            current[k] = isNaN(parseFloat(val)) || val.trim() === '' || input.tagName === 'SELECT' ? val : parseFloat(val);
                         }
                     } else {
                         current[k] = current[k] || {};
@@ -262,11 +298,15 @@
                     }
                 });
             });
+            // Add global font setting
+            result.font_settings = {
+                base_font_name: baseFontNameSelect.value
+            };
             return result;
         };
         
         const mergeVariables = (defaults, overrides) => {
-            const merged = JSON.parse(JSON.stringify(defaults)); // Deep copy
+            const merged = JSON.parse(JSON.stringify(defaults));
             for (const key in overrides) {
                 if (overrides.hasOwnProperty(key)) {
                     if (typeof merged[key] === 'object' && merged[key] !== null && !Array.isArray(merged[key]) && typeof overrides[key] === 'object' && overrides[key] !== null) {
@@ -284,12 +324,80 @@
             renderTimeout = setTimeout(renderPdf, 300);
         };
         
+        function populateContentSelection(resumeData) {
+            contentSelectionForm.innerHTML = '';
+            const createCheckbox = (name, labelText, checked = true, indentLevel = 0) => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center';
+                if (indentLevel > 0) div.style.marginLeft = `${indentLevel * 24}px`;
+                const input = document.createElement('input');
+                input.type = 'checkbox';
+                input.id = `select-${name}`;
+                input.name = name;
+                input.checked = checked;
+                input.className = 'h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500';
+                const label = document.createElement('label');
+                label.htmlFor = `select-${name}`;
+                label.textContent = labelText;
+                label.className = 'ml-2 block text-sm font-medium text-gray-700';
+                div.appendChild(input);
+                div.appendChild(label);
+                return div;
+            };
+
+            if (resumeData.summary) contentSelectionForm.appendChild(createCheckbox('summary', 'Summary'));
+            if (resumeData.skills) contentSelectionForm.appendChild(createCheckbox('skills', 'Skills'));
+            if (resumeData.education && resumeData.education.length > 0) {
+                contentSelectionForm.appendChild(createCheckbox('education', 'Education'));
+                resumeData.education.forEach((edu, i) => contentSelectionForm.appendChild(createCheckbox(`education-${i}`, edu.school, true, 1)));
+            }
+            if (resumeData.experience && resumeData.experience.length > 0) {
+                contentSelectionForm.appendChild(createCheckbox('experience', 'Professional Experience'));
+                resumeData.experience.forEach((job, i) => contentSelectionForm.appendChild(createCheckbox(`experience-${i}`, `${job.company} - ${job.title}`, true, 1)));
+            }
+            if (resumeData.projects && resumeData.projects.length > 0) {
+                contentSelectionForm.appendChild(createCheckbox('projects', 'Projects'));
+                resumeData.projects.forEach((proj, i) => contentSelectionForm.appendChild(createCheckbox(`projects-${i}`, proj.title, true, 1)));
+            }
+        }
+
+        function getFilteredResumeData() {
+            if (!currentResumeYaml) return {};
+            const originalData = jsyaml.load(currentResumeYaml);
+            const filteredData = {};
+            if (originalData.name) filteredData.name = originalData.name;
+            if (originalData.contact) filteredData.contact = originalData.contact;
+            const topLevelSections = ['summary', 'skills', 'education', 'experience', 'projects'];
+            topLevelSections.forEach(sectionKey => {
+                if (!originalData[sectionKey]) return;
+                const sectionCheckbox = contentSelectionForm.querySelector(`input[name="${sectionKey}"]`);
+                if (sectionCheckbox && sectionCheckbox.checked) {
+                    if (Array.isArray(originalData[sectionKey])) {
+                        const filteredItems = originalData[sectionKey].filter((item, index) => {
+                            const itemCheckbox = contentSelectionForm.querySelector(`input[name="${sectionKey}-${index}"]`);
+                            return itemCheckbox && itemCheckbox.checked;
+                        });
+                        if (filteredItems.length > 0) filteredData[sectionKey] = filteredItems;
+                    } else {
+                        filteredData[sectionKey] = originalData[sectionKey];
+                    }
+                }
+            });
+            return filteredData;
+        }
+
         async function renderPdf() {
             if (!currentAppId || !currentResumeYaml) return;
+            const filteredResumeData = getFilteredResumeData();
+            if (Object.keys(filteredResumeData).length <= 2) {
+                 pdfViewer.src = '';
+                 outputSection.style.visibility = 'hidden';
+                 return;
+            }
             const variables = getVariablesFromForm();
             try {
                 const pdfBlob = await apiCall(`/applications/${currentAppId}/render-pdf`, 'POST', {
-                    resumeYaml: currentResumeYaml,
+                    resumeYaml: jsyaml.dump(filteredResumeData),
                     variables: variables
                 }, true);
                 pdfViewer.src = URL.createObjectURL(pdfBlob);
@@ -304,33 +412,37 @@
             applicationView.classList.remove('hidden');
             newAppForm.classList.add('hidden');
             workspace.classList.remove('hidden');
-            
             workspaceTitle.textContent = `${app.company} - ${app.role}`;
             outputSection.style.visibility = 'hidden';
             pdfViewer.src = '';
             yamlStatus.textContent = '';
             fileNameDisplay.textContent = '';
             configFileUpload.value = '';
-            
+            contentSelectionWrapper.classList.add('hidden');
+            contentSelectionForm.innerHTML = '';
             try {
                 const [details, defaultVars] = await Promise.all([
                     apiCall(`/applications/${appId}`),
                     apiCall('/default-variables')
                 ]);
-                
                 globalDefaultVars = defaultVars;
                 appSpecificVars = details.customVariables || {};
-                
                 jobDescriptionEditor.innerHTML = details.jobDescription || '';
                 currentResumeYaml = details.resumeYaml || '';
                 generateResumeBtn.disabled = !details.jobDescription;
                 yamlStatus.textContent = currentResumeYaml ? 'A tailored resume YAML exists.' : '';
-                
                 const finalVars = mergeVariables(defaultVars, details.customVariables || {});
                 
+                // Populate global controls
+                baseFontNameSelect.value = finalVars.font_settings?.base_font_name || 'Helvetica';
+
+                // Populate the rest of the form
                 populateFormattingForm(finalVars, '', formattingForm);
 
                 if (currentResumeYaml) {
+                    const resumeData = jsyaml.load(currentResumeYaml);
+                    populateContentSelection(resumeData);
+                    contentSelectionWrapper.classList.remove('hidden');
                     await renderPdf();
                 }
             } catch (error) {
@@ -340,6 +452,14 @@
         }
         
         async function initializeApp() {
+            // Populate global font dropdown
+            AVAILABLE_FONTS.forEach(font => {
+                const option = document.createElement('option');
+                option.value = font;
+                option.textContent = font;
+                baseFontNameSelect.appendChild(option);
+            });
+            
             try {
                 const appsList = await apiCall('/applications');
                 applications = appsList.reduce((acc, app) => ({ ...acc, [app.appId]: app }), {});
@@ -356,7 +476,6 @@
             applicationView.classList.remove('hidden');
             workspace.classList.add('hidden');
             newAppForm.classList.remove('hidden');
-            
             companyNameInput.value = '';
             roleTitleInput.value = '';
             companyNameInput.focus();
@@ -367,7 +486,6 @@
             const company = companyNameInput.value.trim();
             const role = roleTitleInput.value.trim();
             if (!company || !role) return alert('Please provide both Company Name and Role Title.');
-
             try {
                 const data = await apiCall('/applications', 'POST', { companyName: company, roleTitle: role });
                 applications[data.appId] = { appId: data.appId, company, role };
@@ -402,11 +520,13 @@
                 const result = await apiCall(`/applications/${currentAppId}/generate-resume`, 'POST');
                 currentResumeYaml = result.resumeYaml;
                 yamlStatus.textContent = '✅ Resume YAML generated successfully!';
+                const resumeData = jsyaml.load(currentResumeYaml);
+                populateContentSelection(resumeData);
+                contentSelectionWrapper.classList.remove('hidden');
                 await renderPdf();
-                generateResumeBtn.disabled = false; // Re-enable on success
+                generateResumeBtn.disabled = false;
             } catch (error) {
                 yamlStatus.textContent = '❌ Failed to generate resume YAML. Check backend logs.';
-                // Button remains disabled on failure
             } finally {
                 toggleSpinner(yamlSpinner, false);
             }
@@ -417,7 +537,7 @@
             const variablesToSave = getVariablesFromForm();
             try {
                 await apiCall(`/applications/${currentAppId}/save-variables`, 'POST', { variables: variablesToSave });
-                appSpecificVars = variablesToSave; // Update local state
+                appSpecificVars = variablesToSave;
                 alert('Configuration saved successfully for this application!');
             } catch (error) {
                 alert('Failed to save configuration.');
@@ -427,29 +547,28 @@
         configFileUpload.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (!file) return;
-
             const reader = new FileReader();
             reader.onload = (e) => {
                 try {
                     const customVars = jsyaml.load(e.target.result);
                     const finalVars = mergeVariables(globalDefaultVars, customVars);
+                    
+                    baseFontNameSelect.value = finalVars.font_settings?.base_font_name || 'Helvetica';
                     populateFormattingForm(finalVars, '', formattingForm);
-                    debouncedRender(); // Auto-apply
+
+                    debouncedRender();
                     fileNameDisplay.textContent = `Applied: ${file.name}`;
                 } catch (err) {
                     alert(`Error parsing YAML file: ${err.message}`);
                     fileNameDisplay.textContent = 'Invalid file.';
                 }
             };
-            reader.onerror = () => {
-                alert('Failed to read file.');
-                fileNameDisplay.textContent = 'Error reading file.';
-            };
             reader.readAsText(file);
         });
 
         resetConfigBtn.addEventListener('click', () => {
             const finalVars = mergeVariables(globalDefaultVars, appSpecificVars);
+            baseFontNameSelect.value = finalVars.font_settings?.base_font_name || 'Helvetica';
             populateFormattingForm(finalVars, '', formattingForm);
             debouncedRender();
             fileNameDisplay.textContent = '';
@@ -458,15 +577,25 @@
         });
 
         formattingForm.addEventListener('input', debouncedRender);
+        contentSelectionForm.addEventListener('input', debouncedRender);
+        baseFontNameSelect.addEventListener('input', debouncedRender);
 
-        // --- Initial Load ---
+        const sidebar = document.getElementById('sidebar');
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const sidebarExpander = document.getElementById('sidebarExpander');
+        function toggleSidebar() {
+            const isCollapsed = sidebar.classList.toggle('collapsed');
+            sidebarExpander.classList.toggle('hidden', !isCollapsed);
+        }
+        sidebarToggle.addEventListener('click', toggleSidebar);
+        sidebarExpander.addEventListener('click', toggleSidebar);
+
         document.addEventListener('DOMContentLoaded', initializeApp);
 
         function renderApplicationList() {
             applicationList.innerHTML = Object.keys(applications).length === 0 
                 ? '<p class="text-gray-500 text-sm">No applications started yet.</p>' 
                 : '';
-            
             Object.values(applications)
                 .sort((a, b) => a.company.localeCompare(b.company))
                 .forEach(app => {

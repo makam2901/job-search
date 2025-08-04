@@ -1,46 +1,45 @@
-general:
-  show_summary: false
+font_settings:
+  base_font_name: Helvetica
 styles:
   name:
     fontsize: 16
     spaceAfter: 7
     spaceBefore: 12
     alignment: center
-    fontName: Helvetica-Bold
   contact:
     fontsize: 9
     spaceAfter: 0
     spaceBefore: 0
     alignment: center
-    fontName: Helvetica
   header:
     fontsize: 12
     spaceAfter: 0
     spaceBefore: 0
-    fontName: Helvetica-Bold
+  summary:
+    fontsize: 10
+    spaceAfter: 0
+    spaceBefore: 0
+  skills:
+    fontsize: 10
+    spaceAfter: 2
+    spaceBefore: 0
+    leftIndent: 18
+    bulletIndent: 9
   coursework:
     fontsize: 10
     spaceAfter: 0
     spaceBefore: 0
-    fontName: Helvetica
     leftIndent: 20
   bulleted_list:
     fontsize: 10
     spaceAfter: 0
     spaceBefore: 0
-    fontName: Helvetica
     leftIndent: 18
     bulletIndent: 9
-  content:
-    fontsize: 10
-    spaceAfter: 0
-    spaceBefore: 0
-    fontName: Helvetica
   subheader:
     fontsize: 11
     spaceAfter: 0
     spaceBefore: 0
-    fontName: Helvetica
   horizontal_line:
     thickness: 0.5
     spaceAfter: 3
