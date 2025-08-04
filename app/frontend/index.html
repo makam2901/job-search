@@ -8,18 +8,18 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #555; }
-        .job-description-editor { min-height: 250px; }
         .spinner { animation: spin 1s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .app-button { transition: all 0.2s ease-in-out; }
         .app-button:disabled { background-color: #9ca3af; cursor: not-allowed; }
+        .formatting-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #a8a29e; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #78716c; }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-800">
+<body class="bg-gray-100 text-gray-800 overflow-hidden">
 
     <div class="flex h-screen">
         <!-- Sidebar -->
@@ -29,71 +29,58 @@
                 + New Application
             </button>
             <h2 class="text-lg font-semibold mb-3">Applications</h2>
-            <div id="applicationList" class="flex-grow overflow-y-auto pr-2">
-                <p class="text-gray-500 text-sm">Loading applications...</p>
-            </div>
+            <div id="applicationList" class="flex-grow overflow-y-auto pr-2 custom-scrollbar"></div>
         </aside>
 
         <!-- Main Content -->
-        <main class="w-3/4 p-8 overflow-y-auto">
+        <main class="w-3/4 flex flex-col">
             <div id="welcomeView" class="text-center flex flex-col items-center justify-center h-full">
                 <h2 class="text-3xl font-bold mb-2">Welcome to ApplySmart</h2>
-                <p class="text-gray-600 max-w-md">Your AI-powered job application assistant. Select an application or create a new one to begin.</p>
+                <p class="text-gray-600 max-w-md">Your AI-powered job application assistant.</p>
             </div>
             
-            <div id="applicationView" class="hidden">
-                <!-- New Application Form -->
-                <div id="newAppForm" class="bg-white p-6 rounded-lg shadow-md mb-8">
-                    <h3 class="text-2xl font-semibold mb-4">Create New Application</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label for="companyName" class="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
-                            <input type="text" id="companyName" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                        </div>
-                        <div>
-                            <label for="roleTitle" class="block text-sm font-medium text-gray-700 mb-1">Role Title</label>
-                            <input type="text" id="roleTitle" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                        </div>
-                    </div>
-                    <button id="createApplicationBtn" class="mt-4 bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 transition duration-300 app-button">
-                        Create & Continue
-                    </button>
-                </div>
-
-                <!-- Main Workspace -->
-                <div id="workspace" class="hidden">
-                    <h2 id="workspaceTitle" class="text-3xl font-bold mb-6"></h2>
+            <div id="applicationView" class="hidden h-full flex flex-col">
+                <div id="workspace" class="hidden h-full flex flex-col">
+                    <h2 id="workspaceTitle" class="text-3xl font-bold p-8 pb-0 flex-shrink-0"></h2>
                     
-                    <!-- Job Description Section -->
-                    <div class="bg-white p-6 rounded-lg shadow-md mb-8">
-                        <h3 class="text-xl font-semibold mb-4">1. Job Description</h3>
-                        <div id="jobDescriptionEditor" contenteditable="true" class="w-full border border-gray-300 rounded-lg p-4 job-description-editor overflow-y-auto bg-gray-50"></div>
-                        <div class="mt-4 flex space-x-4">
-                            <button id="saveJDBtn" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 app-button">Save Job Description</button>
-                        </div>
-                    </div>
+                    <div class="flex-grow grid grid-cols-1 lg:grid-cols-2 gap-8 p-8 overflow-hidden">
+                        
+                        <div class="overflow-y-auto custom-scrollbar pr-4">
+                            <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+                                <h3 class="text-xl font-semibold mb-4">1. Job Description</h3>
+                                <div id="jobDescriptionEditor" contenteditable="true" class="w-full border border-gray-300 rounded-lg p-4 min-h-[200px] overflow-y-auto bg-gray-50"></div>
+                                <div class="mt-4 flex space-x-4">
+                                    <button id="saveJDBtn" class="bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-600 app-button">Save JD</button>
+                                </div>
+                            </div>
 
-                    <!-- Generation Section -->
-                    <div class="bg-white p-6 rounded-lg shadow-md mb-8">
-                        <h3 class="text-xl font-semibold mb-4">2. Generate Resume</h3>
-                        <div class="flex space-x-4 items-center">
-                            <button id="generateResumeBtn" class="bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 flex items-center app-button" disabled>
-                                <svg id="yamlSpinner" class="spinner -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                                ✨ Generate Resume (YAML)
-                            </button>
-                            <button id="renderPdfBtn" class="bg-purple-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-purple-700 flex items-center app-button" disabled>
-                                <svg id="pdfSpinner" class="spinner -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                                📄 Render Resume (PDF)
-                            </button>
-                        </div>
-                         <p id="yamlStatus" class="text-sm text-gray-600 mt-2"></p>
-                    </div>
+                            <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+                                <h3 class="text-xl font-semibold mb-4">2. Generate Resume</h3>
+                                <div class="flex space-x-4 items-center">
+                                    <button id="generateResumeBtn" class="bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 flex items-center app-button" disabled>
+                                        <svg id="yamlSpinner" class="spinner -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                        ✨ Generate Resume
+                                    </button>
+                                </div>
+                                 <p id="yamlStatus" class="text-sm text-gray-600 mt-2"></p>
+                            </div>
 
-                    <!-- Output Section -->
-                    <div id="outputSection" class="bg-white p-6 rounded-lg shadow-md hidden">
-                        <h3 class="text-xl font-semibold mb-4">3. Generated Resume</h3>
-                        <div id="pdfViewerContainer" class="w-full h-[800px] border border-gray-300 rounded-lg">
-                            <iframe id="pdfViewer" class="w-full h-full" frameborder="0"></iframe>
+                            <div class="bg-white p-6 rounded-lg shadow-md">
+                                <details open>
+                                    <summary class="text-xl font-semibold cursor-pointer">3. Formatting & Spacing Controls</summary>
+                                    <form id="formattingForm" class="mt-4 space-y-4"></form>
+                                    <button id="saveConfigBtn" class="mt-4 bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700 app-button">
+                                        Save Configuration
+                                    </button>
+                                </details>
+                            </div>
+                        </div>
+
+                        <div id="outputSection" class="flex flex-col overflow-hidden">
+                            <h3 class="text-xl font-semibold mb-4 flex-shrink-0">Generated Resume</h3>
+                            <div id="pdfViewerContainer" class="w-full flex-grow border border-gray-300 rounded-lg">
+                                <iframe id="pdfViewer" class="w-full h-full" frameborder="0"></iframe>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -104,32 +91,26 @@
     <script>
         // --- DOM Elements ---
         const newApplicationBtn = document.getElementById('newApplicationBtn');
-        const createApplicationBtn = document.getElementById('createApplicationBtn');
         const welcomeView = document.getElementById('welcomeView');
         const applicationView = document.getElementById('applicationView');
-        const newAppForm = document.getElementById('newAppForm');
         const workspace = document.getElementById('workspace');
         const workspaceTitle = document.getElementById('workspaceTitle');
-        const companyNameInput = document.getElementById('companyName');
-        const roleTitleInput = document.getElementById('roleTitle');
         const applicationList = document.getElementById('applicationList');
-        
         const saveJDBtn = document.getElementById('saveJDBtn');
         const jobDescriptionEditor = document.getElementById('jobDescriptionEditor');
-        
         const generateResumeBtn = document.getElementById('generateResumeBtn');
-        const renderPdfBtn = document.getElementById('renderPdfBtn');
         const yamlSpinner = document.getElementById('yamlSpinner');
-        const pdfSpinner = document.getElementById('pdfSpinner');
         const yamlStatus = document.getElementById('yamlStatus');
-
         const outputSection = document.getElementById('outputSection');
         const pdfViewer = document.getElementById('pdfViewer');
+        const formattingForm = document.getElementById('formattingForm');
+        const saveConfigBtn = document.getElementById('saveConfigBtn');
 
         // --- State & Config ---
         let applications = {};
         let currentAppId = null;
-        // Updated for Docker environment
+        let currentResumeYaml = '';
+        let renderTimeout;
         const API_BASE_URL = 'http://localhost:8000';
 
         // --- Helper Functions ---
@@ -146,8 +127,7 @@
                     throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
                 }
                 if (isBlob) return await response.blob();
-                if (response.headers.get("content-type")?.includes("application/json")) return await response.json();
-                return;
+                return response.headers.get("content-type")?.includes("application/json") ? await response.json() : null;
             } catch (error) {
                 console.error('API Call Error:', error);
                 alert(`An error occurred: ${error.message}`);
@@ -155,58 +135,125 @@
             }
         }
 
-        function showView(view) {
-            welcomeView.classList.add('hidden');
-            applicationView.classList.add('hidden');
-            view.classList.remove('hidden');
-        }
-        
-        function toggleSpinner(spinnerEl, show) {
-            spinnerEl.classList.toggle('hidden', !show);
-        }
+        const populateFormattingForm = (vars, parentKey = '', container) => {
+            for (const key in vars) {
+                const value = vars[key];
+                const currentKey = parentKey ? `${parentKey}-${key}` : key;
+                if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+                    const fieldset = document.createElement('fieldset');
+                    fieldset.className = 'border border-gray-200 p-3 rounded-lg';
+                    const legend = document.createElement('legend');
+                    legend.className = 'px-2 font-semibold text-gray-600 capitalize';
+                    legend.textContent = key.replace(/_/g, ' ');
+                    fieldset.appendChild(legend);
+                    const div = document.createElement('div');
+                    div.className = 'formatting-grid';
+                    populateFormattingForm(value, currentKey, div);
+                    fieldset.appendChild(div);
+                    container.appendChild(fieldset);
+                } else {
+                    const div = document.createElement('div');
+                    const label = document.createElement('label');
+                    label.htmlFor = currentKey;
+                    label.textContent = key.replace(/_/g, ' ');
+                    label.className = 'block text-sm font-medium text-gray-700 capitalize';
+                    const input = document.createElement('input');
+                    input.type = typeof value === 'number' ? 'number' : 'text';
+                    if(typeof value === 'number') input.step = "any";
+                    input.id = currentKey;
+                    input.name = currentKey;
+                    input.value = value;
+                    input.className = 'mt-1 w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500';
+                    div.appendChild(label);
+                    div.appendChild(input);
+                    container.appendChild(div);
+                }
+            }
+        };
 
-        function renderApplicationList() {
-            applicationList.innerHTML = Object.keys(applications).length === 0 
-                ? '<p class="text-gray-500 text-sm">No applications started yet.</p>' 
-                : '';
-            
-            Object.values(applications)
-                .sort((a, b) => a.company.localeCompare(b.company))
-                .forEach(app => {
-                    const button = document.createElement('button');
-                    button.className = `w-full text-left p-3 rounded-lg mb-2 transition duration-200 ${currentAppId === app.appId ? 'bg-blue-100 text-blue-700 font-semibold' : 'hover:bg-gray-100'}`;
-                    button.textContent = `${app.company} - ${app.role}`;
-                    button.onclick = () => selectApplication(app.appId);
-                    applicationList.appendChild(button);
+        const getVariablesFromForm = () => {
+            const formData = new FormData(formattingForm);
+            const result = {};
+            for (const [key, value] of formData.entries()) {
+                const keys = key.split('-');
+                let current = result;
+                keys.forEach((k, index) => {
+                    if (index === keys.length - 1) {
+                        current[k] = isNaN(parseFloat(value)) ? value : parseFloat(value);
+                    } else {
+                        current[k] = current[k] || {};
+                        current = current[k];
+                    }
                 });
+            }
+            return result;
+        };
+
+        const mergeVariables = (defaults, overrides) => {
+            const merged = { ...defaults };
+            for (const key in overrides) {
+                if (overrides.hasOwnProperty(key)) {
+                    if (typeof merged[key] === 'object' && merged[key] !== null && !Array.isArray(merged[key]) && typeof overrides[key] === 'object') {
+                        merged[key] = mergeVariables(merged[key], overrides[key]);
+                    } else {
+                        merged[key] = overrides[key];
+                    }
+                }
+            }
+            return merged;
+        };
+
+        const debouncedRender = () => {
+            clearTimeout(renderTimeout);
+            renderTimeout = setTimeout(renderPdf, 300);
+        };
+        
+        async function renderPdf() {
+            if (!currentAppId || !currentResumeYaml) return;
+            const variables = getVariablesFromForm();
+            try {
+                const pdfBlob = await apiCall(`/applications/${currentAppId}/render-pdf`, 'POST', {
+                    resumeYaml: currentResumeYaml,
+                    variables: variables
+                }, true);
+                pdfViewer.src = URL.createObjectURL(pdfBlob);
+                outputSection.style.visibility = 'visible';
+            } catch (error) { /* Handled in apiCall */ }
         }
 
         async function selectApplication(appId) {
             currentAppId = appId;
             const app = applications[appId];
-            
-            showView(applicationView);
-            newAppForm.classList.add('hidden');
+            welcomeView.classList.add('hidden');
+            applicationView.classList.remove('hidden');
             workspace.classList.remove('hidden');
-            
             workspaceTitle.textContent = `${app.company} - ${app.role}`;
-            outputSection.classList.add('hidden');
+            outputSection.style.visibility = 'hidden';
             pdfViewer.src = '';
             yamlStatus.textContent = '';
             
             try {
-                const details = await apiCall(`/applications/${appId}`);
+                const [details, defaultVars] = await Promise.all([
+                    apiCall(`/applications/${appId}`),
+                    apiCall('/default-variables')
+                ]);
+                
                 jobDescriptionEditor.innerHTML = details.jobDescription || '';
+                currentResumeYaml = details.resumeYaml || '';
                 generateResumeBtn.disabled = !details.jobDescription;
-                renderPdfBtn.disabled = !details.resumeYaml;
-                yamlStatus.textContent = details.resumeYaml ? 'A tailored resume YAML already exists for this application.' : '';
+                yamlStatus.textContent = currentResumeYaml ? 'A tailored resume YAML exists.' : '';
+                
+                const finalVars = details.customVariables ? mergeVariables(defaultVars, details.customVariables) : defaultVars;
+                
+                formattingForm.innerHTML = '';
+                populateFormattingForm(finalVars, '', formattingForm);
+
+                if (currentResumeYaml) {
+                    await renderPdf();
+                }
             } catch (error) {
-                console.error(`Could not fetch details for ${appId}`, error);
-                jobDescriptionEditor.innerHTML = '';
-                generateResumeBtn.disabled = true;
-                renderPdfBtn.disabled = true;
+                console.error(`Could not load data for ${appId}`, error);
             }
-            
             renderApplicationList();
         }
         
@@ -223,32 +270,22 @@
         // --- Event Listeners ---
         newApplicationBtn.addEventListener('click', () => {
             currentAppId = null;
-            showView(applicationView);
-            workspace.classList.add('hidden');
-            newAppForm.classList.remove('hidden');
-            companyNameInput.value = '';
-            roleTitleInput.value = '';
-            companyNameInput.focus();
+            welcomeView.classList.remove('hidden');
+            applicationView.classList.add('hidden');
             renderApplicationList();
         });
 
-        createApplicationBtn.addEventListener('click', async () => {
-            const company = companyNameInput.value.trim();
-            const role = roleTitleInput.value.trim();
-            if (!company || !role) return alert('Please provide both Company Name and Role Title.');
-
-            try {
-                const data = await apiCall('/applications', 'POST', { companyName: company, roleTitle: role });
-                applications[data.appId] = { appId: data.appId, company, role };
-                await selectApplication(data.appId);
-            } catch (error) { /* Handled in apiCall */ }
+        applicationList.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') {
+                const appId = e.target.dataset.appid;
+                if (appId) selectApplication(appId);
+            }
         });
 
         saveJDBtn.addEventListener('click', async () => {
             if (!currentAppId) return;
             const htmlContent = jobDescriptionEditor.innerHTML.trim();
             if (!htmlContent) return alert('Job description cannot be empty.');
-
             try {
                 await apiCall(`/applications/${currentAppId}/job-description`, 'POST', { htmlContent });
                 generateResumeBtn.disabled = false;
@@ -258,43 +295,53 @@
 
         generateResumeBtn.addEventListener('click', async () => {
             if(!currentAppId) return;
-            
             toggleSpinner(yamlSpinner, true);
             generateResumeBtn.disabled = true;
             yamlStatus.textContent = 'Generating tailored YAML... this may take a moment.';
-
             try {
-                await apiCall(`/applications/${currentAppId}/generate-resume`, 'POST');
-                renderPdfBtn.disabled = false;
-                yamlStatus.textContent = '✅ Resume YAML generated successfully! You can now render the PDF.';
+                const result = await apiCall(`/applications/${currentAppId}/generate-resume`, 'POST');
+                currentResumeYaml = result.resumeYaml;
+                yamlStatus.textContent = '✅ Resume YAML generated successfully!';
+                await renderPdf();
             } catch (error) {
                 yamlStatus.textContent = '❌ Failed to generate resume YAML.';
             } finally {
                 toggleSpinner(yamlSpinner, false);
-                generateResumeBtn.disabled = false; // Re-enable in case user wants to try again
+                generateResumeBtn.disabled = false;
             }
         });
 
-        renderPdfBtn.addEventListener('click', async () => {
-            if(!currentAppId) return;
-
-            toggleSpinner(pdfSpinner, true);
-            renderPdfBtn.disabled = true;
-
+        saveConfigBtn.addEventListener('click', async () => {
+            if (!currentAppId) return;
+            const variablesToSave = getVariablesFromForm();
             try {
-                const pdfBlob = await apiCall(`/applications/${currentAppId}/render-pdf`, 'POST', null, true);
-                pdfViewer.src = URL.createObjectURL(pdfBlob);
-                outputSection.classList.remove('hidden');
-            } catch (error) { /* Handled in apiCall */ }
-            finally {
-                toggleSpinner(pdfSpinner, false);
-                renderPdfBtn.disabled = false;
+                await apiCall(`/applications/${currentAppId}/save-variables`, 'POST', { variables: variablesToSave });
+                alert('Configuration saved successfully for this application!');
+            } catch (error) {
+                alert('Failed to save configuration.');
             }
         });
 
+        formattingForm.addEventListener('input', debouncedRender);
 
         // --- Initial Load ---
         document.addEventListener('DOMContentLoaded', initializeApp);
+
+        function renderApplicationList() {
+            applicationList.innerHTML = Object.keys(applications).length === 0 
+                ? '<p class="text-gray-500 text-sm">No applications started yet.</p>' 
+                : '';
+            
+            Object.values(applications)
+                .sort((a, b) => a.company.localeCompare(b.company))
+                .forEach(app => {
+                    const button = document.createElement('button');
+                    button.className = `w-full text-left p-3 rounded-lg mb-2 transition duration-200 ${currentAppId === app.appId ? 'bg-blue-100 text-blue-700 font-semibold' : 'hover:bg-gray-100'}`;
+                    button.textContent = `${app.company} - ${app.role}`;
+                    button.dataset.appid = app.appId;
+                    applicationList.appendChild(button);
+                });
+        }
     </script>
 </body>
 </html>

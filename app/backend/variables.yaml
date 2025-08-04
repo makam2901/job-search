@@ -1,77 +1,69 @@
 styles:
   name:
     fontsize: 16
-    spaceAfter: 12
+    spaceAfter: 7
     spaceBefore: 12
     alignment: center
     fontName: Helvetica-Bold
 
   contact:
     fontsize: 9
-    spaceAfter: 2
+    spaceAfter: 0
     spaceBefore: 0
     alignment: center
     fontName: Helvetica
 
   header:
     fontsize: 12
-    spaceAfter: 6
-    spaceBefore: 6
+    spaceAfter: 0
+    spaceBefore: 0
     fontName: Helvetica-Bold
 
   coursework:
     fontsize: 10
-    spaceAfter: 4
-    spaceBefore: 4
+    spaceAfter: 0
+    spaceBefore: 0
     fontName: Helvetica
     leftIndent: 20
 
   bulleted_list:
     fontsize: 10
-    spaceAfter: 4
-    spaceBefore: 4
+    spaceAfter: 0
+    spaceBefore: 0
     fontName: Helvetica
-    leftIndent: 20
-    bulletIndent: 10
+    leftIndent: 18 # Indent for the text lines
+    bulletIndent: 9  # Indent for the bullet character
 
   content:
     fontsize: 10
-    spaceAfter: 4
-    spaceBefore: 4
+    spaceAfter: 0
+    spaceBefore: 0
     fontName: Helvetica
 
   subheader:
     fontsize: 11
-    spaceAfter: 4
-    spaceBefore: 4
+    spaceAfter: 0
+    spaceBefore: 0
     fontName: Helvetica
 
   horizontal_line:
     thickness: 0.5
-    spaceAfter: 6
-    spaceBefore: 6
+    spaceAfter: 3
+    spaceBefore: 5
 
 spaces:
   horizontal:
-    education1: 105
-    education2: 84
-    degree1: 106
-    degree2: 81
-    company1: 105
-    company2: 84
-    company3: 106
-    title1: 106
-    title2: 81
-    title3: 106
+    education1: 89
+    education2: 67
+    degree1: 90
+    degree2: 65
+    company1: 133
+    company2: 134
+    company3: 125
+    title1: 122
+    title2: 117
+    title3: 113
   
   vertical:
-    between_headers: 0.4
-    between_subheaders: 0.4
-
-    
-
-
-
-
-
-
+    # Gap between major entries (e.g., between two jobs) in inches
+    section_gap_inch: 0.15
