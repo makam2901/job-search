@@ -127,3 +127,7 @@ certifications:
   - title: AWS Certified AI Practitioner
     issuer: Amazon Web Services
     date: Oct 2024
+    description:
+      - Expertise in AWS AI and ML - Skilled in Amazon SageMaker, Bedrock, and AWS AI Services for model training and development.
+      - Generative AI and Prompt Engineering - Experience with Amazon Bedrock, Amazon Q, and LLM applications and techniques.,
+      - AI Security and Deployment - Knowledge of AWS IAM policies, security services, AI governance, and scalable cloud deployments.
