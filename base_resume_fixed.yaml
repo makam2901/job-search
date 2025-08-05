@@ -76,7 +76,7 @@ education:
     school: University of San Francisco
     location: San Francisco, USA
     dates: Jul 2024 - Jun 2025
-    context: "Relevant coursework includes Inferential Statistics, Machine Learning, Data Acquisition, Data Structures and Algorithms, Distributed Systems, Relational Databases (SQL), Data Visualization, A/B Testing, Time Series Analysis, Deep Learning, Ethics in Data Science."
+    courses: "Inferential Statistics, Machine Learning, Data Acquisition, Data Structures and Algorithms, Distributed Systems, Relational Databases (SQL), Data Visualization, A/B Testing, Time Series Analysis, Deep Learning, Ethics in Data Science."
   - degree: Bachelor of Technology in Aerospace Engineering
     school: Indian Institute of Technology
     location: Kanpur, India
