@@ -31,6 +31,9 @@
         }
         #sidebar.collapsed .app-list-button {
             justify-content: center;
+            /* FIX: Remove horizontal padding to prevent icon clipping */
+            padding-left: 0;
+            padding-right: 0;
         }
          #sidebar.collapsed .justify-between {
             justify-content: center;
@@ -141,29 +144,31 @@
                                 <details open>
                                     <summary class="text-xl font-semibold cursor-pointer">4. Formatting & Spacing</summary>
                                     
-                                    <div class="mt-4 border-t pt-4 space-y-3">
-                                        <div class="flex items-center space-x-4">
-                                            <label for="configFileUpload" class="bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-700 cursor-pointer app-button">
-                                                Load from File
-                                            </label>
-                                            <input type="file" id="configFileUpload" class="hidden" accept=".yaml,.yml">
-                                            <span id="fileNameDisplay" class="text-sm text-gray-500"></span>
-                                            <button id="resetConfigBtn" class="bg-gray-400 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-500 app-button">Return to Default</button>
+                                    <div id="formattingContent" class="hidden">
+                                        <div class="mt-4 border-t pt-4 space-y-3">
+                                            <div class="flex items-center space-x-4">
+                                                <label for="configFileUpload" class="bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-700 cursor-pointer app-button">
+                                                    Load from File
+                                                </label>
+                                                <input type="file" id="configFileUpload" class="hidden" accept=".yaml,.yml">
+                                                <span id="fileNameDisplay" class="text-sm text-gray-500"></span>
+                                                <button id="resetConfigBtn" class="bg-gray-400 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-500 app-button">Return to Default</button>
+                                            </div>
                                         </div>
-                                    </div>
-                                    
-                                    <div id="globalFormattingControls" class="mt-4 space-y-2">
-                                         <div>
-                                            <label for="baseFontName" class="block text-sm font-medium text-gray-700 capitalize">Base Font</label>
-                                            <select id="baseFontName" name="baseFontName" class="mt-1 w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"></select>
+                                        
+                                        <div id="globalFormattingControls" class="mt-4 space-y-2">
+                                             <div>
+                                                <label for="baseFontName" class="block text-sm font-medium text-gray-700 capitalize">Base Font</label>
+                                                <select id="baseFontName" name="baseFontName" class="mt-1 w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"></select>
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    <form id="formattingForm" class="mt-4 space-y-4"></form>
-                                    
-                                    <button id="saveConfigBtn" class="mt-4 bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700 app-button">
-                                        Save Configuration for this Application
-                                    </button>
+                                        <form id="formattingForm" class="mt-4 space-y-4"></form>
+                                        
+                                        <button id="saveConfigBtn" class="mt-4 bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700 app-button">
+                                            Save Configuration for this Application
+                                        </button>
+                                    </div>
                                 </details>
                             </div>
                             
@@ -178,7 +183,7 @@
 
                         <div id="outputSection" class="flex flex-col overflow-hidden">
                             <h3 class="text-xl font-semibold mb-4 flex-shrink-0">Resume Preview</h3>
-                            <div id="pdfViewerContainer" class="w-full flex-grow border border-gray-300 rounded-lg">
+                            <div id="pdfViewerContainer" class="w-full flex-grow border border-gray-300 rounded-lg bg-gray-200">
                                 <iframe id="pdfViewer" class="w-full h-full" frameborder="0"></iframe>
                             </div>
                         </div>
@@ -220,6 +225,7 @@
         const searchApplications = document.getElementById('searchApplications');
         const versionSelectorContainer = document.getElementById('versionSelectorContainer');
         const contentSelectionPlaceholder = document.getElementById('contentSelectionPlaceholder');
+        const formattingContent = document.getElementById('formattingContent');
 
         // --- State & Config ---
         let allApplications = [];
@@ -427,9 +433,10 @@
         async function renderPdf() {
             if (!currentAppId || !currentResumeYaml) return;
             const filteredResumeData = getFilteredResumeData();
-            if (Object.keys(filteredResumeData).length <= 2) {
-                 pdfViewer.src = '';
+            if (Object.keys(filteredResumeData).length <= 2) { 
+                 pdfViewer.src = 'about:blank';
                  outputSection.style.visibility = 'hidden';
+                 formattingContent.classList.add('hidden'); 
                  return;
             }
             const variables = getVariablesFromForm();
@@ -440,6 +447,7 @@
                 }, true);
                 pdfViewer.src = URL.createObjectURL(pdfBlob);
                 outputSection.style.visibility = 'visible';
+                formattingContent.classList.remove('hidden'); 
             } catch (error) { /* Handled in apiCall */ }
         }
 
@@ -454,9 +462,11 @@
             } else {
                 contentSelectionForm.classList.add('hidden');
                 contentSelectionPlaceholder.classList.remove('hidden');
-                pdfViewer.src = '';
+                pdfViewer.src = 'about:blank';
                 outputSection.style.visibility = 'hidden';
+                formattingContent.classList.add('hidden');
             }
+            debouncedRender();
         }
 
         function updateVersionSelector(versions, selectedVersion) {
@@ -484,8 +494,9 @@
             workspace.classList.remove('hidden');
             workspaceTitle.textContent = `${app.company} - ${app.role}`;
             
-            pdfViewer.src = '';
+            pdfViewer.src = 'about:blank';
             outputSection.style.visibility = 'hidden';
+            formattingContent.classList.add('hidden');
             yamlStatus.textContent = '';
             fileNameDisplay.textContent = '';
             configFileUpload.value = '';
@@ -617,11 +628,9 @@
             try {
                 const result = await apiCall(`/applications/${currentAppId}/generate-resume`, 'POST');
                 
-                const newOption = document.createElement('option');
-                newOption.value = result.filename;
-                newOption.textContent = result.filename.replace('tailored_resume_', '').replace('.yaml', '');
-                resumeVersionSelect.prepend(newOption);
-                resumeVersionSelect.value = result.filename;
+                if (result.resumeVersions) {
+                    updateVersionSelector(result.resumeVersions, result.filename);
+                }
                 
                 updateUIWithNewResume(result.resumeYaml);
                 

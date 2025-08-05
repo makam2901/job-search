@@ -207,15 +207,19 @@ def generate_resume(app_id: str):
     with open(jd_path, 'r', encoding='utf-8') as f:
         soup = BeautifulSoup(f.read(), 'html.parser')
         jd_text = soup.get_text(separator='\n', strip=True)
-    
+
     tailored_yaml = agent_resume_tailor(jd_text, base_resume_yaml)
-    
+
     with open(yaml_path, 'w', encoding='utf-8') as f: f.write(tailored_yaml)
-    
+
+    # FIX: Get the updated list of versions after creating the new one
+    updated_versions = get_resume_versions(app_path)
+
     return {
         "message": f"Generated new resume version (v{new_version_num})",
         "resumeYaml": tailored_yaml,
-        "filename": new_resume_filename
+        "filename": new_resume_filename,
+        "resumeVersions": updated_versions # Add this line
     }
 
 @app.post("/applications/{app_id}/save-variables", response_model=Dict[str, str])

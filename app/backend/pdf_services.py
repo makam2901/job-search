@@ -91,7 +91,6 @@ class ATSResumePDFGenerator:
 
         if 'summary' in data and data['summary']:
             self.add_section_header(story, "Summary")
-            # Use the new 'Summary' style
             story.append(Paragraph(data['summary'], self.styles['Summary']))
             story.append(Spacer(1, section_gap))
 
@@ -117,8 +116,9 @@ class ATSResumePDFGenerator:
                     skills_text = skills_value
                 
                 if skills_text:
-                    # Use the new dedicated 'Skills' style
-                    story.append(Paragraph(f"• <b>{category}:</b> {skills_text}", self.styles['Skills']))
+                    # FIX: Use bulletText parameter to correctly apply indentation
+                    skills_paragraph_text = f"<b>{category}:</b> {skills_text}"
+                    story.append(Paragraph(skills_paragraph_text, self.styles['Skills'], bulletText='•'))
             story.append(Spacer(1, section_gap))
 
         if 'experience' in data and data['experience']:
@@ -128,7 +128,8 @@ class ATSResumePDFGenerator:
                 story.append(self.create_two_part_line(job['title'], job['dates'], left_bold=False, separation_key=f"title{i+1}"))
                 if 'bullets' in job:
                     for bullet in job['bullets']:
-                        story.append(Paragraph(f"• {bullet}", self.styles['Bulleted_list']))
+                        # FIX: Use bulletText parameter to correctly apply indentation
+                        story.append(Paragraph(bullet, self.styles['Bulleted_list'], bulletText='•'))
                 story.append(Spacer(1, section_gap))
 
         if 'projects' in data and data['projects']:
@@ -137,7 +138,8 @@ class ATSResumePDFGenerator:
                 story.append(Paragraph(f"<b>{project['title']}</b>", self.styles['Subheader']))
                 if 'bullets' in project:
                     for bullet in project['bullets']:
-                        story.append(Paragraph(f"• {bullet}", self.styles['Bulleted_list']))
+                        # FIX: Use bulletText parameter to correctly apply indentation
+                        story.append(Paragraph(bullet, self.styles['Bulleted_list'], bulletText='•'))
                 story.append(Spacer(1, section_gap))
 
         doc.build(story)
