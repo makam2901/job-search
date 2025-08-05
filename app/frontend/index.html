@@ -19,12 +19,21 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #a8a29e; border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #78716c; }
 
-        #sidebar.collapsed {
-            width: 0;
-            padding-left: 0;
-            padding-right: 0;
-            overflow: hidden;
-            border-right-width: 0;
+        #sidebar { transition: width 300ms ease-in-out; }
+        #sidebar.collapsed { width: 5rem; }
+        #sidebar.collapsed .sidebar-text,
+        #sidebar.collapsed .app-details,
+        #sidebar.collapsed #sidebarToggle {
+            display: none;
+        }
+        #sidebar:not(.collapsed) .sidebar-icon-only {
+            display: none;
+        }
+        #sidebar.collapsed .app-list-button {
+            justify-content: center;
+        }
+         #sidebar.collapsed .justify-between {
+            justify-content: center;
         }
     </style>
 </head>
@@ -32,18 +41,28 @@
 
     <div class="flex h-screen">
         <!-- Sidebar -->
-        <aside id="sidebar" class="w-1/4 bg-white border-r border-gray-200 p-6 flex flex-col shrink-0 transition-all duration-300 ease-in-out">
-            <div class="flex justify-between items-center mb-6">
-                <h1 class="text-2xl font-bold text-blue-600">ApplySmart ✨</h1>
-                <button id="sidebarToggle" title="Toggle sidebar" class="text-gray-500 hover:text-gray-800">
+        <aside id="sidebar" class="w-80 bg-white border-r border-gray-200 p-4 flex flex-col shrink-0">
+            <div class="flex justify-between items-center mb-6 h-8 relative">
+                <h1 class="text-2xl font-bold text-blue-600 flex items-center justify-center w-full">
+                    <span class="sidebar-icon-only font-bold">AS</span>
+                    <span class="sidebar-text">ApplySmart ✨</span>
+                </h1>
+                <button id="sidebarToggle" title="Toggle sidebar" class="text-gray-500 hover:text-gray-800 absolute right-0">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
                 </button>
             </div>
             <div class="flex flex-col flex-grow min-h-0">
-                <button id="newApplicationBtn" class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 mb-6 app-button">
-                    + New Application
+                <button id="newApplicationBtn" class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 mb-4 app-button flex items-center justify-center gap-2">
+                    <span class="sidebar-icon-only text-2xl">+</span>
+                    <span class="sidebar-text">New Application</span>
                 </button>
-                <h2 class="text-lg font-semibold mb-3">Applications</h2>
+                
+                <div class="relative mb-4">
+                     <input type="search" id="searchApplications" placeholder="Search..." class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 sidebar-text">
+                     <svg class="w-5 h-5 absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </div>
+
+                <h2 class="text-lg font-semibold mb-3 sidebar-text">Applications</h2>
                 <div id="applicationList" class="flex-grow overflow-y-auto pr-2 custom-scrollbar"></div>
             </div>
         </aside>
@@ -98,20 +117,27 @@
                                 <div class="flex space-x-4 items-center">
                                     <button id="generateResumeBtn" class="bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 flex items-center app-button" disabled>
                                         <svg id="yamlSpinner" class="spinner -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                                        ✨ Generate Resume
+                                        ✨ Generate New Version
                                     </button>
                                 </div>
                                  <p id="yamlStatus" class="text-sm text-gray-600 mt-2"></p>
                             </div>
                             
-                            <div id="contentSelectionWrapper" class="bg-white p-6 rounded-lg shadow-md mb-8 hidden">
+                            <div id="contentSelectionWrapper" class="bg-white p-6 rounded-lg shadow-md mb-8">
                                 <details open>
                                     <summary class="text-xl font-semibold cursor-pointer">3. Select Content</summary>
-                                    <form id="contentSelectionForm" class="mt-4 border-t pt-4 space-y-2"></form>
+                                    <div id="versionSelectorContainer" class="my-4 hidden">
+                                        <label for="resumeVersionSelect" class="block text-sm font-medium text-gray-700 mb-1">Select Resume Version:</label>
+                                        <select id="resumeVersionSelect" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"></select>
+                                    </div>
+                                    <form id="contentSelectionForm" class="mt-4 border-t pt-4 space-y-2 hidden"></form>
+                                    <div id="contentSelectionPlaceholder" class="text-center py-8 text-gray-500">
+                                        <p>Generate a resume version to select content.</p>
+                                    </div>
                                 </details>
                             </div>
 
-                            <div class="bg-white p-6 rounded-lg shadow-md">
+                             <div class="bg-white p-6 rounded-lg shadow-md">
                                 <details open>
                                     <summary class="text-xl font-semibold cursor-pointer">4. Formatting & Spacing</summary>
                                     
@@ -126,7 +152,6 @@
                                         </div>
                                     </div>
                                     
-                                    <!-- Global Font Control -->
                                     <div id="globalFormattingControls" class="mt-4 space-y-2">
                                          <div>
                                             <label for="baseFontName" class="block text-sm font-medium text-gray-700 capitalize">Base Font</label>
@@ -141,10 +166,18 @@
                                     </button>
                                 </details>
                             </div>
+                            
+                            <div class="bg-white p-6 rounded-lg shadow-md mt-8">
+                                <h3 class="text-xl font-semibold mb-4">5. Finalize</h3>
+                                <p class="text-sm text-gray-600 mb-4">This will save the currently configured resume as the final version in the application folder on the server.</p>
+                                <button id="finalizeBtn" class="w-full bg-emerald-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-emerald-700 flex items-center justify-center app-button" disabled>
+                                    Finalize & Save PDF
+                                </button>
+                            </div>
                         </div>
 
                         <div id="outputSection" class="flex flex-col overflow-hidden">
-                            <h3 class="text-xl font-semibold mb-4 flex-shrink-0">Generated Resume</h3>
+                            <h3 class="text-xl font-semibold mb-4 flex-shrink-0">Resume Preview</h3>
                             <div id="pdfViewerContainer" class="w-full flex-grow border border-gray-300 rounded-lg">
                                 <iframe id="pdfViewer" class="w-full h-full" frameborder="0"></iframe>
                             </div>
@@ -182,9 +215,14 @@
         const contentSelectionWrapper = document.getElementById('contentSelectionWrapper');
         const contentSelectionForm = document.getElementById('contentSelectionForm');
         const baseFontNameSelect = document.getElementById('baseFontName');
+        const resumeVersionSelect = document.getElementById('resumeVersionSelect');
+        const finalizeBtn = document.getElementById('finalizeBtn');
+        const searchApplications = document.getElementById('searchApplications');
+        const versionSelectorContainer = document.getElementById('versionSelectorContainer');
+        const contentSelectionPlaceholder = document.getElementById('contentSelectionPlaceholder');
 
         // --- State & Config ---
-        let applications = {};
+        let allApplications = [];
         let currentAppId = null;
         let currentResumeYaml = '';
         let globalDefaultVars = {};
@@ -218,14 +256,14 @@
                 throw error;
             }
         }
-
+        
         const populateFormattingForm = (vars, parentKey = '', container) => {
             container.innerHTML = '';
             for (const key in vars) {
                 const value = vars[key];
                 const currentKey = parentKey ? `${parentKey}-${key}` : key;
                 
-                if(key === 'font_settings') continue; // Skip font settings, handled globally
+                if(key === 'font_settings') continue;
 
                 if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
                     const fieldset = document.createElement('fieldset');
@@ -256,7 +294,7 @@
                     div.appendChild(label);
                     container.appendChild(div);
                 } else {
-                    if (key === 'fontName') continue; // Skip individual font names
+                    if (key === 'fontName') continue; 
 
                     const div = document.createElement('div');
                     const label = document.createElement('label');
@@ -298,7 +336,6 @@
                     }
                 });
             });
-            // Add global font setting
             result.font_settings = {
                 base_font_name: baseFontNameSelect.value
             };
@@ -318,7 +355,7 @@
             }
             return merged;
         };
-
+        
         const debouncedRender = () => {
             clearTimeout(renderTimeout);
             renderTimeout = setTimeout(renderPdf, 300);
@@ -326,6 +363,7 @@
         
         function populateContentSelection(resumeData) {
             contentSelectionForm.innerHTML = '';
+            if (!resumeData) return;
             const createCheckbox = (name, labelText, checked = true, indentLevel = 0) => {
                 const div = document.createElement('div');
                 div.className = 'flex items-center';
@@ -405,21 +443,54 @@
             } catch (error) { /* Handled in apiCall */ }
         }
 
+        function updateUIWithNewResume(resumeYaml) {
+            currentResumeYaml = resumeYaml;
+            finalizeBtn.disabled = !resumeYaml;
+            if (resumeYaml) {
+                const resumeData = jsyaml.load(resumeYaml);
+                populateContentSelection(resumeData);
+                contentSelectionForm.classList.remove('hidden');
+                contentSelectionPlaceholder.classList.add('hidden');
+            } else {
+                contentSelectionForm.classList.add('hidden');
+                contentSelectionPlaceholder.classList.remove('hidden');
+                pdfViewer.src = '';
+                outputSection.style.visibility = 'hidden';
+            }
+        }
+
+        function updateVersionSelector(versions, selectedVersion) {
+            resumeVersionSelect.innerHTML = '';
+            if (versions && versions.length > 0) {
+                versions.forEach(versionFile => {
+                    const option = document.createElement('option');
+                    option.value = versionFile;
+                    option.textContent = versionFile.replace('tailored_resume_', '').replace('.yaml', '');
+                    resumeVersionSelect.appendChild(option);
+                });
+                resumeVersionSelect.value = selectedVersion;
+                versionSelectorContainer.classList.remove('hidden');
+            } else {
+                versionSelectorContainer.classList.add('hidden');
+            }
+        }
+
         async function selectApplication(appId) {
             currentAppId = appId;
-            const app = applications[appId];
+            const app = allApplications.find(a => a.appId === appId);
             welcomeView.classList.add('hidden');
             applicationView.classList.remove('hidden');
             newAppForm.classList.add('hidden');
             workspace.classList.remove('hidden');
             workspaceTitle.textContent = `${app.company} - ${app.role}`;
-            outputSection.style.visibility = 'hidden';
+            
             pdfViewer.src = '';
+            outputSection.style.visibility = 'hidden';
             yamlStatus.textContent = '';
             fileNameDisplay.textContent = '';
             configFileUpload.value = '';
-            contentSelectionWrapper.classList.add('hidden');
-            contentSelectionForm.innerHTML = '';
+            finalizeBtn.disabled = true;
+
             try {
                 const [details, defaultVars] = await Promise.all([
                     apiCall(`/applications/${appId}`),
@@ -428,31 +499,29 @@
                 globalDefaultVars = defaultVars;
                 appSpecificVars = details.customVariables || {};
                 jobDescriptionEditor.innerHTML = details.jobDescription || '';
-                currentResumeYaml = details.resumeYaml || '';
                 generateResumeBtn.disabled = !details.jobDescription;
-                yamlStatus.textContent = currentResumeYaml ? 'A tailored resume YAML exists.' : '';
-                const finalVars = mergeVariables(defaultVars, details.customVariables || {});
-                
-                // Populate global controls
-                baseFontNameSelect.value = finalVars.font_settings?.base_font_name || 'Helvetica';
 
-                // Populate the rest of the form
+                const versions = details.resumeVersions || [];
+                const latestVersion = versions.length > 0 ? versions[0] : null;
+
+                const finalVars = mergeVariables(defaultVars, details.customVariables || {});
+                baseFontNameSelect.value = finalVars.font_settings?.base_font_name || 'Helvetica';
                 populateFormattingForm(finalVars, '', formattingForm);
 
-                if (currentResumeYaml) {
-                    const resumeData = jsyaml.load(currentResumeYaml);
-                    populateContentSelection(resumeData);
-                    contentSelectionWrapper.classList.remove('hidden');
-                    await renderPdf();
+                updateVersionSelector(versions, latestVersion);
+                updateUIWithNewResume(details.resumeYaml);
+
+                if (!latestVersion) {
+                    yamlStatus.textContent = 'No resume versions generated yet.';
                 }
+
             } catch (error) {
                 console.error(`Could not load data for ${appId}`, error);
             }
-            renderApplicationList();
+            renderApplicationList(allApplications);
         }
         
         async function initializeApp() {
-            // Populate global font dropdown
             AVAILABLE_FONTS.forEach(font => {
                 const option = document.createElement('option');
                 option.value = font;
@@ -461,9 +530,8 @@
             });
             
             try {
-                const appsList = await apiCall('/applications');
-                applications = appsList.reduce((acc, app) => ({ ...acc, [app.appId]: app }), {});
-                renderApplicationList();
+                allApplications = await apiCall('/applications');
+                renderApplicationList(allApplications);
             } catch (error) {
                 applicationList.innerHTML = '<p class="text-red-500 text-sm">Could not load applications. Is the backend server running?</p>';
             }
@@ -479,27 +547,37 @@
             companyNameInput.value = '';
             roleTitleInput.value = '';
             companyNameInput.focus();
-            renderApplicationList();
+            renderApplicationList(allApplications);
         });
 
         createApplicationBtn.addEventListener('click', async () => {
             const company = companyNameInput.value.trim();
             const role = roleTitleInput.value.trim();
             if (!company || !role) return alert('Please provide both Company Name and Role Title.');
+            
+            createApplicationBtn.disabled = true;
+            createApplicationBtn.textContent = 'Creating...';
+
             try {
                 const data = await apiCall('/applications', 'POST', { companyName: company, roleTitle: role });
-                applications[data.appId] = { appId: data.appId, company, role };
+                
+                const newApp = {
+                    appId: data.appId,
+                    company: company,
+                    role: role,
+                    createdAt: Date.now() / 1000 
+                };
+                allApplications.unshift(newApp);
                 await selectApplication(data.appId);
-            } catch (error) { /* Handled in apiCall */ }
-        });
 
-        applicationList.addEventListener('click', (e) => {
-            if (e.target.tagName === 'BUTTON') {
-                const appId = e.target.dataset.appid;
-                if (appId) selectApplication(appId);
+            } catch (error) {
+                // Error is already alerted in apiCall
+            } finally {
+                createApplicationBtn.disabled = false;
+                createApplicationBtn.textContent = 'Create & Continue';
             }
         });
-
+        
         saveJDBtn.addEventListener('click', async () => {
             if (!currentAppId) return;
             const htmlContent = jobDescriptionEditor.innerHTML.trim();
@@ -511,27 +589,76 @@
             } catch (error) { /* Handled in apiCall */ }
         });
 
+        searchApplications.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const filteredApps = allApplications.filter(app => 
+                app.company.toLowerCase().includes(searchTerm) || 
+                app.role.toLowerCase().includes(searchTerm)
+            );
+            renderApplicationList(filteredApps);
+        });
+        
+        resumeVersionSelect.addEventListener('change', async (e) => {
+            const selectedFilename = e.target.value;
+            if (!currentAppId || !selectedFilename) return;
+            try {
+                const data = await apiCall(`/applications/${currentAppId}/resume-content?filename=${selectedFilename}`);
+                updateUIWithNewResume(data.resumeYaml);
+            } catch (error) {
+                alert(`Could not load resume version: ${selectedFilename}`);
+            }
+        });
+        
         generateResumeBtn.addEventListener('click', async () => {
             if(!currentAppId) return;
             toggleSpinner(yamlSpinner, true);
             generateResumeBtn.disabled = true;
-            yamlStatus.textContent = 'Generating tailored YAML... this may take a moment.';
+            yamlStatus.textContent = 'Generating new resume version... this may take a moment.';
             try {
                 const result = await apiCall(`/applications/${currentAppId}/generate-resume`, 'POST');
-                currentResumeYaml = result.resumeYaml;
-                yamlStatus.textContent = '✅ Resume YAML generated successfully!';
-                const resumeData = jsyaml.load(currentResumeYaml);
-                populateContentSelection(resumeData);
-                contentSelectionWrapper.classList.remove('hidden');
-                await renderPdf();
-                generateResumeBtn.disabled = false;
+                
+                const newOption = document.createElement('option');
+                newOption.value = result.filename;
+                newOption.textContent = result.filename.replace('tailored_resume_', '').replace('.yaml', '');
+                resumeVersionSelect.prepend(newOption);
+                resumeVersionSelect.value = result.filename;
+                
+                updateUIWithNewResume(result.resumeYaml);
+                
+                const versionMatch = result.filename.match(/_v(\d+)/);
+                yamlStatus.textContent = versionMatch ? `✅ Successfully generated resume v${versionMatch[1]}!` : '✅ Resume YAML generated successfully!';
+
             } catch (error) {
-                yamlStatus.textContent = '❌ Failed to generate resume YAML. Check backend logs.';
+                yamlStatus.textContent = '❌ Failed to generate new resume version. Check backend logs.';
             } finally {
                 toggleSpinner(yamlSpinner, false);
+                generateResumeBtn.disabled = false;
             }
         });
 
+        finalizeBtn.addEventListener('click', async () => {
+            if (!currentAppId || !currentResumeYaml) {
+                alert('Cannot finalize. No resume content is loaded.');
+                return;
+            }
+            finalizeBtn.disabled = true;
+            finalizeBtn.textContent = 'Finalizing...';
+            try {
+                const filteredResumeData = getFilteredResumeData();
+                const variables = getVariablesFromForm();
+                const response = await apiCall(`/applications/${currentAppId}/finalize`, 'POST', {
+                    resumeYaml: jsyaml.dump(filteredResumeData),
+                    variables: variables
+                });
+                alert(response.message || 'Resume finalized successfully!');
+            } catch (error) {
+                alert('Failed to finalize resume. Check backend logs.');
+            } finally {
+                finalizeBtn.disabled = false;
+                finalizeBtn.innerHTML = 'Finalize & Save PDF';
+            }
+        });
+        
         saveConfigBtn.addEventListener('click', async () => {
             if (!currentAppId) return;
             const variablesToSave = getVariablesFromForm();
@@ -575,36 +702,53 @@
             configFileUpload.value = '';
             alert('Formatting has been reset to the application\'s default.');
         });
-
+        
         formattingForm.addEventListener('input', debouncedRender);
         contentSelectionForm.addEventListener('input', debouncedRender);
         baseFontNameSelect.addEventListener('input', debouncedRender);
 
+        // --- Sidebar Logic ---
         const sidebar = document.getElementById('sidebar');
         const sidebarToggle = document.getElementById('sidebarToggle');
         const sidebarExpander = document.getElementById('sidebarExpander');
         function toggleSidebar() {
             const isCollapsed = sidebar.classList.toggle('collapsed');
             sidebarExpander.classList.toggle('hidden', !isCollapsed);
+            sidebarToggle.classList.toggle('hidden', isCollapsed);
         }
         sidebarToggle.addEventListener('click', toggleSidebar);
         sidebarExpander.addEventListener('click', toggleSidebar);
 
         document.addEventListener('DOMContentLoaded', initializeApp);
 
-        function renderApplicationList() {
-            applicationList.innerHTML = Object.keys(applications).length === 0 
-                ? '<p class="text-gray-500 text-sm">No applications started yet.</p>' 
+        function renderApplicationList(appsToRender) {
+            applicationList.innerHTML = appsToRender.length === 0 
+                ? '<p class="text-gray-500 text-sm p-3">No applications found.</p>' 
                 : '';
-            Object.values(applications)
-                .sort((a, b) => a.company.localeCompare(b.company))
-                .forEach(app => {
-                    const button = document.createElement('button');
-                    button.className = `w-full text-left p-3 rounded-lg mb-2 transition duration-200 ${currentAppId === app.appId ? 'bg-blue-100 text-blue-700 font-semibold' : 'hover:bg-gray-100'}`;
-                    button.textContent = `${app.company} - ${app.role}`;
-                    button.dataset.appid = app.appId;
-                    applicationList.appendChild(button);
-                });
+            
+            appsToRender.forEach(app => {
+                const date = new Date(app.createdAt * 1000);
+                const dateString = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+                const button = document.createElement('button');
+                button.className = `w-full text-left p-3 rounded-lg mb-2 transition duration-200 flex items-center justify-between app-list-button ${currentAppId === app.appId ? 'bg-blue-100 text-blue-700 font-semibold' : 'hover:bg-gray-100'}`;
+                button.dataset.appid = app.appId;
+                
+                button.innerHTML = `
+                    <div class="flex items-center gap-3 overflow-hidden">
+                        <div class="w-8 h-8 rounded-md flex-shrink-0 flex items-center justify-center text-white font-bold ${currentAppId === app.appId ? 'bg-blue-500' : 'bg-gray-400'}">
+                            ${app.company.charAt(0)}
+                        </div>
+                        <div class="app-details flex-grow overflow-hidden">
+                            <div class="font-semibold truncate">${app.company}</div>
+                            <div class="text-xs text-gray-500 truncate">${app.role}</div>
+                        </div>
+                    </div>
+                    <div class="text-xs text-gray-400 font-medium app-details flex-shrink-0">${dateString}</div>
+                `;
+                button.addEventListener('click', () => selectApplication(app.appId));
+                applicationList.appendChild(button);
+            });
         }
     </script>
 </body>

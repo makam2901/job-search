@@ -13,6 +13,7 @@ def get_app_id(company_name: str, role_title: str) -> str:
     """Creates a safe directory name from company and role titles."""
     safe_company = "".join(c if c.isalnum() else '_' for c in company_name)
     safe_role = "".join(c if c.isalnum() else '_' for c in role_title)
+    # Reverted to a simpler separator logic
     return f"{safe_company}_{safe_role}"
 
 def load_variables() -> Dict:
