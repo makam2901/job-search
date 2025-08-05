@@ -1,5 +1,3 @@
-font_settings:
-  base_font_name: Helvetica
 styles:
   name:
     fontsize: 16
@@ -12,49 +10,51 @@ styles:
     spaceBefore: 0
     alignment: center
   header:
-    fontsize: 12
+    fontsize: 11
     spaceAfter: 0
     spaceBefore: 0
   summary:
-    fontsize: 10
+    fontsize: 9
     spaceAfter: 0
     spaceBefore: 0
   skills:
-    fontsize: 10
+    fontsize: 9
     spaceAfter: 2
     spaceBefore: 0
-    leftIndent: 18
-    bulletIndent: 9
+    leftIndent: 13
+    bulletIndent: 5
   coursework:
-    fontsize: 10
+    fontsize: 9
     spaceAfter: 0
     spaceBefore: 0
     leftIndent: 20
   bulleted_list:
-    fontsize: 10
+    fontsize: 9
     spaceAfter: 0
     spaceBefore: 0
-    leftIndent: 18
-    bulletIndent: 9
+    leftIndent: 13
+    bulletIndent: 5
   subheader:
-    fontsize: 11
+    fontsize: 9
     spaceAfter: 0
     spaceBefore: 0
   horizontal_line:
     thickness: 0.5
-    spaceAfter: 3
-    spaceBefore: 5
+    spaceAfter: 5
+    spaceBefore: 3
 spaces:
   horizontal:
-    education1: 89
-    education2: 67
-    degree1: 90
-    degree2: 65
-    company1: 133
-    company2: 134
-    company3: 125
-    title1: 122
-    title2: 117
-    title3: 113
+    education1: 126
+    education2: 131
+    degree1: 130
+    degree2: 105
+    company1: 173
+    company2: 170
+    company3: 165
+    title1: 157
+    title2: 152
+    title3: 152
   vertical:
-    section_gap_inch: 0.02
+    section_gap_inch: 0.05
+font_settings:
+  base_font_name: Helvetica

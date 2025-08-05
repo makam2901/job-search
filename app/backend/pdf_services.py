@@ -89,6 +89,8 @@ class ATSResumePDFGenerator:
         story.append(Paragraph(f"<b>{data['name']}</b>", self.styles['Name']))
         story.append(Paragraph(self.create_contact_info(data['contact']), self.styles['Contact']))
 
+        
+
         if 'summary' in data and data['summary']:
             self.add_section_header(story, "Summary")
             story.append(Paragraph(data['summary'], self.styles['Summary']))
