@@ -22,7 +22,7 @@ load_dotenv()
 app = FastAPI(
     title="ApplySmart Backend",
     description="Manages job applications and renders PDFs with dynamic formatting.",
-    version="11.0.0" # Version bump for app creation fix
+    version="12.0.0" # Version bump for robust generation
 )
 
 # --- CORS Middleware ---
@@ -70,6 +70,37 @@ def get_resume_versions(app_path: str) -> List[str]:
         
     return sorted_filenames
 
+def merge_resume_data(fixed_data: Dict, generated_data: Dict) -> Dict:
+    """Merges the fixed and LLM-generated resume data."""
+    final_resume = fixed_data.copy()
+
+    # Add summary and skills
+    if 'summary' in generated_data:
+        final_resume['summary'] = generated_data['summary']
+    if 'skills' in generated_data:
+        final_resume['skills'] = generated_data['skills']
+
+    # Add education details
+    if 'education_details' in generated_data and 'education' in final_resume:
+        for i, edu_details in enumerate(generated_data['education_details']):
+            if i < len(final_resume['education']):
+                # Ensure details is a string, even if LLM returns None
+                final_resume['education'][i]['details'] = edu_details.get('details') or ''
+
+
+    # Add experience bullets
+    if 'experience_bullets' in generated_data and 'experience' in final_resume:
+        for i, exp_bullets in enumerate(generated_data['experience_bullets']):
+            if i < len(final_resume['experience']):
+                final_resume['experience'][i]['bullets'] = exp_bullets.get('bullets', [])
+
+    # Replace projects with the reordered list
+    if 'projects_reordered' in generated_data:
+        final_resume['projects'] = generated_data['projects_reordered']
+
+    return final_resume
+
+
 # --- API Endpoints ---
 @app.on_event("startup")
 def on_startup():
@@ -103,7 +134,6 @@ def get_applications():
                 "createdAt": created_at 
             })
         else:
-            # Fallback for old applications without app_details.json
             try:
                 company_part, role_part = app_id.rsplit('_', 1)
                 created_at = os.path.getmtime(app_path)
@@ -126,7 +156,6 @@ def create_application(data: ApplicationData):
     if os.path.exists(app_path): raise HTTPException(status_code=409, detail="Application already exists.")
     os.makedirs(app_path)
     
-    # Save company and role to a file
     details_path = os.path.join(app_path, "app_details.json")
     with open(details_path, 'w') as f:
         json.dump({"companyName": data.companyName, "roleTitle": data.roleTitle}, f)
@@ -197,29 +226,48 @@ def generate_resume(app_id: str):
     jd_path = os.path.join(app_path, "job_description.html")
     if not os.path.exists(jd_path): raise HTTPException(status_code=404, detail="Job description not found.")
 
+    # Load the fixed base resume
+    with open(BASE_RESUME_PATH, 'r', encoding='utf-8') as f:
+        fixed_resume_yaml = f.read()
+        fixed_resume_data = yaml.safe_load(fixed_resume_yaml)
+
+    # Get job description text
+    with open(jd_path, 'r', encoding='utf-8') as f:
+        soup = BeautifulSoup(f.read(), 'html.parser')
+        jd_text = soup.get_text(separator='\n', strip=True)
+
+    # Call the LLM to get the generated content
+    generated_content_str = agent_resume_tailor(jd_text, fixed_resume_yaml)
+    
+    try:
+        # The LLM returns a JSON string, which can be parsed by yaml.safe_load
+        generated_data = yaml.safe_load(generated_content_str)
+    except yaml.YAMLError as e:
+        print(f"Error parsing LLM response: {e}")
+        print(f"LLM Response:\n{generated_content_str}")
+        raise HTTPException(status_code=500, detail="Failed to parse LLM-generated resume content.")
+
+    # Merge fixed data with generated data
+    final_resume_data = merge_resume_data(fixed_resume_data, generated_data)
+    final_resume_yaml = yaml.dump(final_resume_data, sort_keys=False, allow_unicode=True)
+
+    # Versioning and saving the final resume
     resume_versions = get_resume_versions(app_path)
     version_numbers = [int(re.search(r'_v(\d+)\.yaml$', f).group(1)) for f in resume_versions if re.search(r'_v(\d+)\.yaml$', f)]
     new_version_num = max(version_numbers) + 1 if version_numbers else 1
     new_resume_filename = f"tailored_resume_v{new_version_num}.yaml"
     yaml_path = os.path.join(app_path, new_resume_filename)
 
-    with open(BASE_RESUME_PATH, 'r', encoding='utf-8') as f: base_resume_yaml = f.read()
-    with open(jd_path, 'r', encoding='utf-8') as f:
-        soup = BeautifulSoup(f.read(), 'html.parser')
-        jd_text = soup.get_text(separator='\n', strip=True)
+    with open(yaml_path, 'w', encoding='utf-8') as f:
+        f.write(final_resume_yaml)
 
-    tailored_yaml = agent_resume_tailor(jd_text, base_resume_yaml)
-
-    with open(yaml_path, 'w', encoding='utf-8') as f: f.write(tailored_yaml)
-
-    # FIX: Get the updated list of versions after creating the new one
     updated_versions = get_resume_versions(app_path)
 
     return {
         "message": f"Generated new resume version (v{new_version_num})",
-        "resumeYaml": tailored_yaml,
+        "resumeYaml": final_resume_yaml,
         "filename": new_resume_filename,
-        "resumeVersions": updated_versions # Add this line
+        "resumeVersions": updated_versions
     }
 
 @app.post("/applications/{app_id}/save-variables", response_model=Dict[str, str])

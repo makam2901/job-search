@@ -7,7 +7,7 @@ services:
       - "8000:8000"
     volumes:
       - ./applications:/app/applications
-      - ./manikesh_resume_ats.yaml:/app/manikesh_resume_ats.yaml
+      - ./base_resume_fixed.yaml:/app/base_resume_fixed.yaml
       - ./app/backend/variables.yaml:/app/variables.yaml
 
     env_file:
