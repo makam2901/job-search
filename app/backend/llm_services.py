@@ -66,7 +66,7 @@ def agent_resume_tailor(jd_text: str, fixed_resume_yaml: str) -> str:
     and returns only the AI-generated content in a structured format.
     """
     prompt = f"""
-You are an expert ATS resume writer with complete creative freedom. Your primary goal is to make the candidate the perfect fit for the job description by inventing compelling, tailored content. You must only output a valid JSON string.
+You are an expert ATS resume writer and career coach. Your task is to transform a candidate's information into a high-impact, ATS-optimized resume that tells a compelling story of problem-solving heavily relevant to the job description. You can access the internet to help your decision-making for tailoring. You must output a valid JSON string.
 
 **Target Job Description:**
 ---
@@ -79,37 +79,68 @@ You are an expert ATS resume writer with complete creative freedom. Your primary
 ```
 ---
 
-**Your Task:**
-Generate a JSON structure containing ONLY the following keys: `summary`, `experience_bullets`, and `projects_reordered`. Follow these instructions precisely:
+**Your Task & Strict Instructions:**
+Generate a JSON structure containing ONLY the following keys: `summary`, `skills_reordered`, `experience_bullets`, and `projects_reordered`.
 
 1.  **`summary`**:
-    - Write a powerful, 1 line professional summary that perfectly mirrors the top requirements of the job description optimized for ATS.
+    - Write a powerful, 1-line professional summary (max 20 words) that perfectly mirrors the top requirements of the job description, optimized for ATS keyword matching.
 
-2.  **`experience_bullets`**:
-    - This is a list of objects, each containing a `bullets` key. The list must correspond to the `experience` section in the fixed information.
-    - You have **full creative freedom** to write bullet points. Use the `context` as a starting point, but invent realistic, quantifiable, and results-oriented achievements that directly align with the job description's needs.
-    - Each bullet must be a single, impactful line. Start with a strong action verb.
-    - it should be key word heavy based on job description and role in general what it demands.
-    - content size:
-        - DRINKS: 3 points
-        - AB INBEV: 6 points
+2.  **`skills_reordered`**:
+    - Reorder the skill category blocks from the fixed information based on their relevance to the job description. Do NOT change the content within each category.
+
+3.  **`experience_bullets`**:
+    - All the content should heavily be dependent on the job description.
+    - Incoorporate the industry if mentioned in the job description. Ex: if finance is mentioned, invent saying financial data or financial reports.
+    - This is your most critical task. You must generate bullet points using the **Problem-Action-Result (PAR)** framework.
+    - For each bullet, you must first articulate the business **problem** or **challenge**, then the **action** taken, and finally the **quantifiable result**.
+    - **INVENT QUANTIFIABLE METRICS.** Most bullets **MUST** include a plausible, impactful metric. Invent realistic ones if not provided. Examples: "reduced latency by 30%", "processed 500GB of data", "increased user engagement by 15%", "saved $50,000 in operational costs".
+    - Word Count: 19 if small words, 17 if large words.
+    - Number of Bullets:
+        - DRINKS: 4 points
+        - AB INBEV: 8 points
         - Janta Ka Mood: 2 points
-    - Each bullet should be between 10-15 words. If absolutely necessary, you can go up to 20 words, but no more.
 
-3.  **`projects_reordered`**:
-    - Analyze the projects from the fixed information and the job description.
-    - Reorder the projects to prioritize the ones most relevant to the job.
-    - For each project in the newly ordered list, you must:
-        - Include its original `title` and `dates`.
-        - You have **full creative freedom** to write bullet points. Use the `context` as a starting point, but invent realistic, quantifiable, and results-oriented achievements that directly align with the job description's needs.
-        - Each bullet must be a single, impactful line. Start with a strong action verb. (10-15 words)
-        - it should be key word heavy based on job description and role in general what it demands.
-        - only 2 for each project.
-        - Each bullet should be between 10-15 words. If absolutely necessary, you can go up to 20 words, but no more.
+4.  **`projects_reordered`**:
+    - Reorder projects based on job relevance.
+    - All the content should heavily be dependent on the job description.
+    - For each project, write **two distinct types of bullet points**:
+        - **Bullet 1 (The "Why"):** Focus on the **objective** or the **problem** this project was designed to solve. This should be more narrative and explain the project's purpose. It does not need a metric.
+        - **Bullet 2 (The "How/What"):** Focus on the **technical implementation** and a **quantifiable result**. This bullet must contain a realistic, invented metric.
+    - Word Count: 20 if small words, 18 if large words.
+    - Number of Bullets: Exactly 2 for each project.
+    - Include the original `title` and `dates` for each project.
 
+**Output Format & Example:**
+Your entire output MUST be a single, valid JSON string without any other text, explanations, or markdown. It must follow this exact structure:
 
-**Output Format:**
-Your entire output MUST be a single, valid JSON string. Do not include any other text, explanations, or markdown formatting like ```json.
+```json
+{{
+  "summary": "A powerful, 1-line professional summary...",
+  "skills_reordered": [
+    {{ "ML_Techniques": ["Regression", "Classification", "..."] }},
+    {{ "Cloud": ["AWS (Lambda, S3, Bedrock)", "..."] }}
+  ],
+  "experience_bullets": [
+    {{
+      "bullets": [
+        "Addressed X challenge by implementing Y solution, achieving a 20% improvement in Z.",
+        "Solved the problem of A by developing B, which processed 500GB of data daily.",
+        "..."
+      ]
+    }}
+  ],
+  "projects_reordered": [
+    {{
+      "title": "AI Fantasy Team Predictor",
+      "dates": "Mar 2025 - May 2025",
+      "bullets": [
+        "To provide cricket fans with a data-driven tool to create optimal fantasy teams and enhance engagement.",
+        "Developed a GradientBoosting model and deployed it on GCP, improving prediction accuracy by over 95%."
+      ]
+    }}
+  ]
+}}
+```
 """
     generated_content_str = call_gemini_api(prompt, is_json_output=True)
     

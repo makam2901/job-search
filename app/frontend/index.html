@@ -31,7 +31,6 @@
         }
         #sidebar.collapsed .app-list-button {
             justify-content: center;
-            /* FIX: Remove horizontal padding to prevent icon clipping */
             padding-left: 0;
             padding-right: 0;
         }
@@ -350,6 +349,7 @@
         
         const mergeVariables = (defaults, overrides) => {
             const merged = JSON.parse(JSON.stringify(defaults));
+            if (!overrides) return merged;
             for (const key in overrides) {
                 if (overrides.hasOwnProperty(key)) {
                     if (typeof merged[key] === 'object' && merged[key] !== null && !Array.isArray(merged[key]) && typeof overrides[key] === 'object' && overrides[key] !== null) {
@@ -367,73 +367,97 @@
             renderTimeout = setTimeout(renderPdf, 300);
         };
         
+        // FIX: Updated function to create checkboxes for all sections and their items.
         function populateContentSelection(resumeData) {
             contentSelectionForm.innerHTML = '';
             if (!resumeData) return;
-            const createCheckbox = (name, labelText, checked = true, indentLevel = 0) => {
+            
+            const createCheckbox = (name, labelText, checked = true, indentLevel = 0, isBold = false) => {
                 const div = document.createElement('div');
                 div.className = 'flex items-center';
                 if (indentLevel > 0) div.style.marginLeft = `${indentLevel * 24}px`;
+                
                 const input = document.createElement('input');
                 input.type = 'checkbox';
                 input.id = `select-${name}`;
                 input.name = name;
                 input.checked = checked;
                 input.className = 'h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500';
+                
                 const label = document.createElement('label');
                 label.htmlFor = `select-${name}`;
                 label.textContent = labelText;
-                label.className = 'ml-2 block text-sm font-medium text-gray-700';
+                label.className = `ml-2 block text-sm font-medium text-gray-700 ${isBold ? 'font-semibold' : ''}`;
+                
                 div.appendChild(input);
                 div.appendChild(label);
                 return div;
             };
 
-            if (resumeData.summary) contentSelectionForm.appendChild(createCheckbox('summary', 'Summary'));
-            if (resumeData.skills) contentSelectionForm.appendChild(createCheckbox('skills', 'Skills'));
-            if (resumeData.education && resumeData.education.length > 0) {
-                contentSelectionForm.appendChild(createCheckbox('education', 'Education'));
-                resumeData.education.forEach((edu, i) => contentSelectionForm.appendChild(createCheckbox(`education-${i}`, edu.school, true, 1)));
-            }
-            if (resumeData.experience && resumeData.experience.length > 0) {
-                contentSelectionForm.appendChild(createCheckbox('experience', 'Professional Experience'));
-                resumeData.experience.forEach((job, i) => contentSelectionForm.appendChild(createCheckbox(`experience-${i}`, `${job.company} - ${job.title}`, true, 1)));
-            }
-            if (resumeData.projects && resumeData.projects.length > 0) {
-                contentSelectionForm.appendChild(createCheckbox('projects', 'Projects'));
-                resumeData.projects.forEach((proj, i) => contentSelectionForm.appendChild(createCheckbox(`projects-${i}`, proj.title, true, 1)));
-            }
+            const addSectionCheckboxes = (sectionKey, sectionTitle, itemKey, itemLabelFunc) => {
+                if (resumeData[sectionKey] && Array.isArray(resumeData[sectionKey])) {
+                    contentSelectionForm.appendChild(createCheckbox(sectionKey, sectionTitle, true, 0, true));
+                    resumeData[sectionKey].forEach((item, i) => {
+                        contentSelectionForm.appendChild(createCheckbox(`${sectionKey}-${i}`, itemLabelFunc(item), true, 1));
+                    });
+                }
+            };
+
+            if (resumeData.summary) contentSelectionForm.appendChild(createCheckbox('summary', 'Summary', true, 0, true));
+            
+            addSectionCheckboxes('skills', 'Skills', 'skill', item => Object.keys(item)[0]);
+            addSectionCheckboxes('education', 'Education', 'education', item => item.school);
+            addSectionCheckboxes('experience', 'Professional Experience', 'experience', item => `${item.company} - ${item.title}`);
+            addSectionCheckboxes('projects', 'Projects', 'project', item => item.title);
+            addSectionCheckboxes('certifications', 'Certifications', 'certification', item => item.title);
         }
 
+        // FIX: Updated function to filter resume data based on checkbox selections.
         function getFilteredResumeData() {
             if (!currentResumeYaml) return {};
             const originalData = jsyaml.load(currentResumeYaml);
-            const filteredData = {};
-            if (originalData.name) filteredData.name = originalData.name;
-            if (originalData.contact) filteredData.contact = originalData.contact;
-            const topLevelSections = ['summary', 'skills', 'education', 'experience', 'projects'];
-            topLevelSections.forEach(sectionKey => {
+            
+            // Create a deep copy to avoid modifying the original data object
+            const filteredData = JSON.parse(JSON.stringify(originalData)); 
+
+            const sections = ['summary', 'skills', 'education', 'experience', 'projects', 'certifications'];
+            
+            sections.forEach(sectionKey => {
                 if (!originalData[sectionKey]) return;
+
                 const sectionCheckbox = contentSelectionForm.querySelector(`input[name="${sectionKey}"]`);
-                if (sectionCheckbox && sectionCheckbox.checked) {
-                    if (Array.isArray(originalData[sectionKey])) {
-                        const filteredItems = originalData[sectionKey].filter((item, index) => {
-                            const itemCheckbox = contentSelectionForm.querySelector(`input[name="${sectionKey}-${index}"]`);
-                            return itemCheckbox && itemCheckbox.checked;
-                        });
-                        if (filteredItems.length > 0) filteredData[sectionKey] = filteredItems;
+                
+                // If the main section checkbox is unchecked, remove the whole section
+                if (sectionCheckbox && !sectionCheckbox.checked) {
+                    delete filteredData[sectionKey];
+                    return;
+                }
+
+                // If the section is an array, filter its items
+                if (Array.isArray(originalData[sectionKey])) {
+                    const filteredItems = originalData[sectionKey].filter((item, index) => {
+                        const itemCheckbox = contentSelectionForm.querySelector(`input[name="${sectionKey}-${index}"]`);
+                        // Keep item if its checkbox doesn't exist or is checked
+                        return !itemCheckbox || itemCheckbox.checked;
+                    });
+
+                    if (filteredItems.length > 0) {
+                        filteredData[sectionKey] = filteredItems;
                     } else {
-                        filteredData[sectionKey] = originalData[sectionKey];
+                         delete filteredData[sectionKey]; // Remove section if all items are unchecked
                     }
                 }
             });
             return filteredData;
         }
 
+
         async function renderPdf() {
             if (!currentAppId || !currentResumeYaml) return;
             const filteredResumeData = getFilteredResumeData();
-            if (Object.keys(filteredResumeData).length <= 2) { 
+            
+            // Check if there's any content left to render besides name and contact
+            if (Object.keys(filteredResumeData).filter(k => k !== 'name' && k !== 'contact').length === 0) { 
                  pdfViewer.src = 'about:blank';
                  outputSection.style.visibility = 'hidden';
                  formattingContent.classList.add('hidden'); 

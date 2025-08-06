@@ -5,7 +5,7 @@ from reportlab.lib.units import inch
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
 from reportlab.pdfbase import pdfmetrics
-from typing import Dict
+from typing import Dict, List
 
 ALIGNMENT_MAP = {
     "left": TA_LEFT,
@@ -86,43 +86,50 @@ class ATSResumePDFGenerator:
         v_spaces = self.vars.get("spaces", {}).get("vertical", {})
         section_gap = v_spaces.get("section_gap_inch", 0.1) * inch
         
-        story.append(Paragraph(f"<b>{data['name']}</b>", self.styles['Name']))
-        story.append(Paragraph(self.create_contact_info(data['contact']), self.styles['Contact']))
+        # --- Name and Contact ---
+        if 'name' in data:
+            story.append(Paragraph(f"<b>{data['name']}</b>", self.styles['Name']))
+        if 'contact' in data:
+            story.append(Paragraph(self.create_contact_info(data['contact']), self.styles['Contact']))
 
-        
-
+        # --- Summary ---
         if 'summary' in data and data['summary']:
             self.add_section_header(story, "Summary")
             story.append(Paragraph(data['summary'], self.styles['Summary']))
             story.append(Spacer(1, section_gap))
 
+        # --- Education ---
         if 'education' in data and data['education']:
             self.add_section_header(story, "Education")
             for i, edu in enumerate(data['education']):
                 story.append(self.create_two_part_line(edu['school'].upper(), edu['location'], left_bold=True, separation_key=f"education{i+1}"))
                 degree_info = edu['degree'] + (f", GPA: {edu['gpa']}" if 'gpa' in edu else "")
                 story.append(self.create_two_part_line(degree_info, edu['dates'], left_bold=False, separation_key=f"degree{i+1}"))
-                if 'details' in edu:
-                    story.append(Paragraph(f"<b>Coursework:</b> {edu['details']}", self.styles['Coursework']))
+                # FIX: Display coursework from the 'courses' key, which is now correctly passed from the base resume.
+                if 'courses' in edu and edu['courses']:
+                    story.append(Paragraph(f"<b>Coursework:</b> {edu['courses']}", self.styles['Coursework']))
                 if i < len(data['education']) - 1:
-                    story.append(Spacer(1, section_gap))
+                    story.append(Spacer(1, 0.05*inch))
             story.append(Spacer(1, section_gap))
 
+        # --- Skills ---
         if 'skills' in data and data['skills']:
             self.add_section_header(story, "Technical Skills")
-            for category, skills_value in data['skills'].items():
-                skills_text = ""
-                if isinstance(skills_value, list):
-                    skills_text = ', '.join(str(s) for s in skills_value)
-                elif isinstance(skills_value, str):
-                    skills_text = skills_value
-                
-                if skills_text:
-                    # FIX: Use bulletText parameter to correctly apply indentation
-                    skills_paragraph_text = f"<b>{category}:</b> {skills_text}"
-                    story.append(Paragraph(skills_paragraph_text, self.styles['Skills'], bulletText='•'))
+            for skill_item in data['skills']:
+                for category, skills_value in skill_item.items():
+                    skills_text = ""
+                    if isinstance(skills_value, list):
+                        skills_text = ', '.join(str(s) for s in skills_value)
+                    elif isinstance(skills_value, str):
+                        skills_text = skills_value
+                    
+                    if skills_text:
+                        skills_paragraph_text = f"<b>{category}:</b> {skills_text}"
+                        # Use the 'Skills' style which has appropriate indentation settings.
+                        story.append(Paragraph(skills_paragraph_text, self.styles['Skills']))
             story.append(Spacer(1, section_gap))
 
+        # --- Experience ---
         if 'experience' in data and data['experience']:
             self.add_section_header(story, "Professional Experience")
             for i, job in enumerate(data['experience']):
@@ -130,19 +137,32 @@ class ATSResumePDFGenerator:
                 story.append(self.create_two_part_line(job['title'], job['dates'], left_bold=False, separation_key=f"title{i+1}"))
                 if 'bullets' in job:
                     for bullet in job['bullets']:
-                        # FIX: Use bulletText parameter to correctly apply indentation
                         story.append(Paragraph(bullet, self.styles['Bulleted_list'], bulletText='•'))
-                story.append(Spacer(1, section_gap))
+                if i < len(data['experience']) - 1:
+                     story.append(Spacer(1, 0.05*inch))
+            story.append(Spacer(1, section_gap))
 
+        # --- Projects ---
         if 'projects' in data and data['projects']:
             self.add_section_header(story, "Projects")
-            for project in data['projects']:
+            for i, project in enumerate(data['projects']):
                 story.append(Paragraph(f"<b>{project['title']}</b>", self.styles['Subheader']))
                 if 'bullets' in project:
                     for bullet in project['bullets']:
-                        # FIX: Use bulletText parameter to correctly apply indentation
                         story.append(Paragraph(bullet, self.styles['Bulleted_list'], bulletText='•'))
-                story.append(Spacer(1, section_gap))
+                if i < len(data['projects']) - 1:
+                    story.append(Spacer(1, 0.05*inch))
+            story.append(Spacer(1, section_gap))
+            
+        # --- Certifications ---
+        if 'certifications' in data and data['certifications']:
+            self.add_section_header(story, "Certifications")
+            for cert in data['certifications']:
+                story.append(Paragraph(f"<b>{cert['title']}</b> - <i>{cert['issuer']} ({cert['date']})</i>", self.styles['Subheader']))
+                if 'description' in cert and cert['description']:
+                    for desc_bullet in cert['description']:
+                         story.append(Paragraph(desc_bullet, self.styles['Bulleted_list'], bulletText='-'))
+
 
         doc.build(story)
         print(f"ATS-optimized resume generated: {output_file}")

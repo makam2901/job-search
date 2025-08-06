@@ -83,16 +83,16 @@ education:
     dates: Jul 2018 - Jun 2022
 skills:
   - Languages: Python, SQL, R, Bash, VBA, JavaScript
-  - ML_Techniques: Regression, Classification, Clustering, Time Series, NLP, Deep Learning, A/B Testing, Hyperparameter Tuning, Model Monitoring
+  - ML_Techniques: Regression, Classification, Clustering, Time Series, NLP, Deep Learning, A/B Testing, Hyperparameter Tuning
   - Libraries: scikit-learn, TensorFlow, PyTorch, XGBoost, CatBoost, pandas, NumPy, Seaborn, Matplotlib, Langchain, FAISS
-  - Tools: Airflow, Spark, PySpark, Docker, Flask, FastAPI, Selenium, Git, Jupyter, VSCode, MLflow, Metaflow, Streamlit, HTML, Node.js, React.js
+  - Tools: Airflow, Spark, Docker, Flask, FastAPI, Selenium, Github, MLflow, Metaflow, Streamlit, HTML, Node.js, React.js
   - Cloud: AWS (Lambda, S3, Bedrock), GCP (GCS, Composer, Kubernetes, BigQuery), Pinecone
   - DevOps: Terraform, GitHub Actions, CI/CD, MLOps Automation
   - LLMs_AI: OpenAI, Hugging Face, Gemini, Langflow, RAG, Prompt Engineering, AI Agents, Vector DBs, Document Retrieval
   - Databases: PostgreSQL, MySQL, SQL Server, MongoDB
   - Testing: Pytest, Great Expectations, Evidently AI, Model Validation
   - Visualization: Tableau, Power BI, Excel, R Shiny
-  - Business: KPI Analysis, Process Optimization, Stakeholder Communication, Project Management, Documentation, Data Governance
+  - Business: KPI Analysis, Process Optimization, Stakeholder Communication, Project Management, Documentation
 
 experience:
   - title: Data Scientist Intern
@@ -104,7 +104,7 @@ experience:
     company: AB InBev
     location: Bangalore, India
     dates: Aug 2022 - Jun 2024
-    context: "Led end-to-end automation of reporting workflows using Python, Airflow, Power BI, Salesforce automations, and VBA, saving $500K annually and reducing errors by 80%. Built scalable ETL pipelines, standardized data processes, and ran SQL-based A/B tests that improved CSAT by 15%. Managed cross-functional projects and collaborated with stakeholders to align data solutions with business goals."
+    context: "Led end-to-end automation of process workflows of financial planning and analytics team using Python, Airflow, Power BI, Salesforce automations, and VBA, saving $500K annually and reducing errors by 80%. Built scalable ETL pipelines, standardized data processes, and ran SQL-based A/B tests that improved CSAT by 15%. Managed cross-functional projects and collaborated with stakeholders to align data solutions with business goals."
   - title: Data Science Intern
     company: Janta Ka Mood
     location: Kanpur, India
@@ -114,13 +114,13 @@ experience:
 projects:
   - title: AI Fantasy Team Predictor
     dates: Mar 2025 - May 2025
-    context: "Built a full-stack AI fantasy cricket platform with FastAPI, Streamlit, and GradientBoosting models for real-time team recommendations. Integrated Gemini LLM for conversational insights and deployed the system on GCP with Docker, Kubernetes, and MLflow-enabled MLOps."
+    context: "Built a full-stack AI fantasy cricket platform with FastAPI, Streamlit, and GradientBoosting models for real-time team recommendations and player performance prediction. Integrated Gemini LLM for conversational insights and deployed the system on GCP with Docker, Kubernetes, and MLflow-enabled MLOps."
   - title: Longitudinal Growth Forecasting
     dates: Feb 2025 - Mar 2025
     context: "Built a hybrid ML pipeline using CatBoost and Preece-Baines models to forecast adolescent growth, improving RMSE by 18%. Applied time-series feature engineering, imputation strategies, and SHAP-based interpretation to enhance accuracy and model insights."
   - title: US Census Data Processing Pipeline
     dates: Jan 2025
-    context: "Built a scalable ETL pipeline to process 650 GB of US Census data using PySpark, Airflow, and GCP, enabling end-to-end automation and reliable data storage. Scraped, cleaned, and transformed public datasets, loaded outputs into MongoDB, and generated visual analytics to support demographic modeling."
+    context: "Built a scalable ETL pipeline to process 650 GB of US Census data for complete demographic analysis using PySpark, Airflow, and GCP, enabling end-to-end automation and reliable data storage. Scraped, cleaned, and transformed public datasets, loaded outputs into MongoDB, and generated visual analytics to support demographic modeling."
   - title: AI Speech Emotion Recognition System
     dates: Mar 2025 - May 2025
     context: "Developed a deep learning pipeline for speech emotion recognition using PyTorch, achieving 89% accuracy across multiple architectures (CNN, CRNN, CNN-LSTM). Automated hyperparameter tuning with Optuna, standardized MFCC features from 4 datasets, and built production-ready inference pipelines."

@@ -19,7 +19,7 @@ styles:
     spaceBefore: 0
   skills:
     fontsize: 9
-    spaceAfter: 2
+    spaceAfter: 0
     spaceBefore: 0
     leftIndent: 13
     bulletIndent: 5
@@ -44,17 +44,17 @@ styles:
     spaceBefore: 3
 spaces:
   horizontal:
-    education1: 126
-    education2: 131
-    degree1: 130
-    degree2: 105
-    company1: 173
-    company2: 170
-    company3: 165
-    title1: 157
-    title2: 152
-    title3: 152
+    education1: 143
+    education2: 144
+    degree1: 154
+    degree2: 128
+    company1: 193
+    company2: 194
+    company3: 184
+    title1: 175
+    title2: 179
+    title3: 176
   vertical:
-    section_gap_inch: 0.05
+    section_gap_inch: 0.01
 font_settings:
-  base_font_name: Helvetica
+  base_font_name: Times-Roman

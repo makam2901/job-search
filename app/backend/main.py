@@ -22,7 +22,7 @@ load_dotenv()
 app = FastAPI(
     title="ApplySmart Backend",
     description="Manages job applications and renders PDFs with dynamic formatting.",
-    version="12.0.0" # Version bump for robust generation
+    version="14.0.0" # Version bump for skill reordering
 )
 
 # --- CORS Middleware ---
@@ -74,19 +74,18 @@ def merge_resume_data(fixed_data: Dict, generated_data: Dict) -> Dict:
     """Merges the fixed and LLM-generated resume data."""
     final_resume = fixed_data.copy()
 
-    # Add summary and skills
+    # Add summary
     if 'summary' in generated_data:
         final_resume['summary'] = generated_data['summary']
-    if 'skills' in generated_data:
-        final_resume['skills'] = generated_data['skills']
+    
+    # FIX: Replace skills with the reordered list from the LLM.
+    if 'skills_reordered' in generated_data:
+        final_resume['skills'] = generated_data['skills_reordered']
+    # Fallback to the original skills if the LLM doesn't provide a reordered list.
+    elif 'skills' in fixed_data:
+        final_resume['skills'] = fixed_data['skills']
 
-    # Add education details
-    if 'education_details' in generated_data and 'education' in final_resume:
-        for i, edu_details in enumerate(generated_data['education_details']):
-            if i < len(final_resume['education']):
-                # Ensure details is a string, even if LLM returns None
-                final_resume['education'][i]['details'] = edu_details.get('details') or ''
-
+    # Coursework is fixed and does not need to be merged from generated data.
 
     # Add experience bullets
     if 'experience_bullets' in generated_data and 'experience' in final_resume:
@@ -302,7 +301,8 @@ def render_pdf(app_id: str, data: RenderRequestData):
             app_specific_vars = yaml.safe_load(f)
             final_vars = merge_variables(final_vars, app_specific_vars)
 
-    final_vars = merge_variables(final_vars, data.variables)
+    if data.variables:
+        final_vars = merge_variables(final_vars, data.variables)
 
     pdf_path = os.path.join(app_path, "tailored_resume_preview.pdf")
     pdf_generator = ATSResumePDFGenerator(variables=final_vars)
