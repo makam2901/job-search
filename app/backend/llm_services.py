@@ -80,17 +80,12 @@ You are an expert ATS resume writer with complete creative freedom. Your primary
 ---
 
 **Your Task:**
-Generate a JSON structure containing ONLY the following keys: `summary`, `skills`, `education_details`, `experience_bullets`, and `projects_reordered`. Follow these instructions precisely:
+Generate a JSON structure containing ONLY the following keys: `summary`, `experience_bullets`, and `projects_reordered`. Follow these instructions precisely:
 
 1.  **`summary`**:
     - Write a powerful, 1 line professional summary that perfectly mirrors the top requirements of the job description optimized for ATS.
 
-2.  **`education_details`**:
-    - This is a list that corresponds to the `education` section in the fixed information.
-    - For the education entry that contains a `context` field, use that context to generate a `details` string of ATS-optimized, relevant coursework based on the job description.
-    - For any education entry **without** a `context` field, you MUST provide an empty `details` string (`""`).
-
-3.  **`experience_bullets`**:
+2.  **`experience_bullets`**:
     - This is a list of objects, each containing a `bullets` key. The list must correspond to the `experience` section in the fixed information.
     - You have **full creative freedom** to write bullet points. Use the `context` as a starting point, but invent realistic, quantifiable, and results-oriented achievements that directly align with the job description's needs.
     - Each bullet must be a single, impactful line. Start with a strong action verb.
@@ -101,7 +96,7 @@ Generate a JSON structure containing ONLY the following keys: `summary`, `skills
         - Janta Ka Mood: 2 points
     - Each bullet should be between 10-15 words. If absolutely necessary, you can go up to 20 words, but no more.
 
-4.  **`projects_reordered`**:
+3.  **`projects_reordered`**:
     - Analyze the projects from the fixed information and the job description.
     - Reorder the projects to prioritize the ones most relevant to the job.
     - For each project in the newly ordered list, you must:
@@ -120,4 +115,3 @@ Your entire output MUST be a single, valid JSON string. Do not include any other
     
     cleaned_str = generated_content_str.replace("```json", "").replace("```", "").strip()
     return cleaned_str
-
