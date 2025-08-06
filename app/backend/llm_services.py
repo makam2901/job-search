@@ -83,7 +83,7 @@ You are an expert ATS resume writer and career coach. Your task is to transform 
 Generate a JSON structure containing ONLY the following keys: `summary`, `skills_reordered`, `experience_bullets`, and `projects_reordered`.
 
 1.  **`summary`**:
-    - Write a powerful, 1-line professional summary (max 20 words) that perfectly mirrors the top requirements of the job description, optimized for ATS keyword matching.
+    - Write a powerful, 1-line professional summary (max 20 words, make the entire line is 125-130 characters.) that perfectly mirrors the top requirements of the job description, optimized for ATS keyword matching.
 
 2.  **`skills_reordered`**:
     - Reorder the skill category blocks from the fixed information based on their relevance to the job description. Do NOT change the content within each category.
@@ -91,10 +91,10 @@ Generate a JSON structure containing ONLY the following keys: `summary`, `skills
 3.  **`experience_bullets`**:
     - All the content should heavily be dependent on the job description.
     - Incoorporate the industry if mentioned in the job description. Ex: if finance is mentioned, invent saying financial data or financial reports.
-    - This is your most critical task. You must generate bullet points using the **Problem-Action-Result (PAR)** framework.
-    - For each bullet, you must first articulate the business **problem** or **challenge**, then the **action** taken, and finally the **quantifiable result**.
+    - This is your most critical task. You must generate bullet points using the **Problem-Action-Result (PAR)** framework. Not necessarily for all the bullet points. Just optimise for ATS.
+    - For most bullets, you must first articulate the business **problem** or **challenge**, then the **action** taken, and finally the **quantifiable result**.
     - **INVENT QUANTIFIABLE METRICS.** Most bullets **MUST** include a plausible, impactful metric. Invent realistic ones if not provided. Examples: "reduced latency by 30%", "processed 500GB of data", "increased user engagement by 15%", "saved $50,000 in operational costs".
-    - Word Count: 19 if small words, 17 if large words.
+    - Word Count: 20 if small words, 18 if large words. make the entire line is 125-130 characters. strict.
     - Number of Bullets:
         - DRINKS: 4 points
         - AB INBEV: 8 points
@@ -103,10 +103,11 @@ Generate a JSON structure containing ONLY the following keys: `summary`, `skills
 4.  **`projects_reordered`**:
     - Reorder projects based on job relevance.
     - All the content should heavily be dependent on the job description.
-    - For each project, write **two distinct types of bullet points**:
-        - **Bullet 1 (The "Why"):** Focus on the **objective** or the **problem** this project was designed to solve. This should be more narrative and explain the project's purpose. It does not need a metric.
-        - **Bullet 2 (The "How/What"):** Focus on the **technical implementation** and a **quantifiable result**. This bullet must contain a realistic, invented metric.
-    - Word Count: 20 if small words, 18 if large words.
+    - Incoorporate the industry if mentioned in the job description. Ex: if finance is mentioned, invent saying financial data or financial reports.
+    - This is your most critical task. You must generate bullet points using the **Problem-Action-Result (PAR)** framework. Not necessarily for all the bullet points. Just optimise for ATS.
+    - For most bullets, you must first articulate the business **problem** or **challenge**, then the **action** taken, and finally the **quantifiable result**.
+    - **INVENT QUANTIFIABLE METRICS.** Most bullets **MUST** include a plausible, impactful metric. Invent realistic ones if not provided. Examples: "reduced latency by 30%", "processed 500GB of data", "increased user engagement by 15%", "saved $50,000 in operational costs".
+    - Word Count: 20 if small words, 18 if large words. make the entire line is 125-130 characters. strict.
     - Number of Bullets: Exactly 2 for each project.
     - Include the original `title` and `dates` for each project.
 
