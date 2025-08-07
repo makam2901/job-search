@@ -866,19 +866,27 @@
 
         const getContentSelectionConfig = () => {
             const config = {};
-            const inputs = contentSelectionForm.querySelectorAll('input[type="checkbox"]');
+            const inputs = contentSelectionForm.querySelectorAll('input[type="checkbox"], select');
             inputs.forEach(input => {
-                config[input.name] = input.checked;
+                if (input.type === 'checkbox') {
+                    config[input.name] = input.checked;
+                } else {
+                    config[input.name] = input.value;
+                }
             });
             return config;
         };
 
         const applyContentSelectionConfig = (config) => {
             if (!config) return;
-            const inputs = contentSelectionForm.querySelectorAll('input[type="checkbox"]');
+            const inputs = contentSelectionForm.querySelectorAll('input[type="checkbox"], select');
             inputs.forEach(input => {
                 if (config.hasOwnProperty(input.name)) {
-                    input.checked = config[input.name];
+                    if (input.type === 'checkbox') {
+                        input.checked = config[input.name];
+                    } else {
+                        input.value = config[input.name];
+                    }
                 }
             });
         };
@@ -906,6 +914,35 @@
         function populateContentSelection(resumeData) {
             contentSelectionForm.innerHTML = '';
             if (!resumeData) return;
+
+            // Contact Info Selectors
+            const contactDiv = document.createElement('div');
+            contactDiv.className = 'grid grid-cols-1 md:grid-cols-2 gap-4 mb-4';
+            
+            const emailSelectHtml = `
+                <div>
+                    <label for="contact-email" class="block text-sm font-medium text-gray-700">Email</label>
+                    <select id="contact-email" name="contact-email" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                        <option>makamsrimanikesh@outlook.com</option>
+                        <option>srimanikesh@outlook.com</option>
+                    </select>
+                </div>
+            `;
+
+            const locationSelectHtml = `
+                <div>
+                    <label for="contact-location" class="block text-sm font-medium text-gray-700">Location</label>
+                    <select id="contact-location" name="contact-location" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                        <option>San Francisco, CA</option>
+                        <option>Rahway, New Jersey</option>
+                    </select>
+                </div>
+            `;
+
+            contactDiv.innerHTML = emailSelectHtml + locationSelectHtml;
+            contentSelectionForm.appendChild(contactDiv);
+
+
             const createCheckbox = (name, labelText, checked = true, indentLevel = 0, isBold = false) => {
                 const div = document.createElement('div');
                 div.className = 'flex items-center';
@@ -944,6 +981,15 @@
             if (!currentResumeYaml) return {};
             const originalData = jsyaml.load(currentResumeYaml);
             const filteredData = JSON.parse(JSON.stringify(originalData)); 
+            
+            // Update contact info based on selectors
+            const emailSelect = document.getElementById('contact-email');
+            const locationSelect = document.getElementById('contact-location');
+            if (emailSelect && locationSelect && filteredData.contact) {
+                filteredData.contact.email = emailSelect.value;
+                filteredData.contact.location = locationSelect.value;
+            }
+
             const sections = ['summary', 'skills', 'education', 'experience', 'projects', 'certifications'];
             sections.forEach(sectionKey => {
                 if (!originalData[sectionKey]) return;
