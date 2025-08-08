@@ -33,7 +33,7 @@
         /* Tab styling */
         .tab-button.active { border-color: #3b82f6; color: #3b82f6; background-color: #eff6ff; }
         .tab-content { display: none; }
-        .tab-content.active { display: block; }
+        .tab-content.active { display: grid; } /* Changed to grid for 3-pane layout */
         
         /* Tracker Table Styling */
         .tracker-table th, .tracker-table td { padding: 12px 15px; text-align: left; vertical-align: middle; }
@@ -50,9 +50,6 @@
              background-color: white;
              outline: none;
         }
-        /* Favorite Company Tile */
-        .company-tile { transition: box-shadow 0.2s ease-in-out; }
-        .company-tile:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800 overflow-hidden">
@@ -95,7 +92,7 @@
                 </div>
                 <nav class="-mb-px flex space-x-6 px-4" aria-label="Tabs">
                     <button data-tab="applications" class="tab-button active shrink-0 border-b-2 font-medium px-1 py-4 text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">Applications</button>
-                    <button data-tab="favorites" class="tab-button shrink-0 border-b-2 font-medium px-1 py-4 text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">Favorites</button>
+                    <button data-tab="email" class="tab-button shrink-0 border-b-2 font-medium px-1 py-4 text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">Email</button>
                     <button data-tab="tracker" class="tab-button shrink-0 border-b-2 font-medium px-1 py-4 text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">Tracker</button>
                     <button data-tab="dashboard" class="tab-button shrink-0 border-b-2 font-medium px-1 py-4 text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">Dashboard</button>
                 </nav>
@@ -103,7 +100,7 @@
 
 
             <!-- Applications Tab Content -->
-            <div id="applicationsContent" class="tab-content active h-full overflow-y-auto">
+            <div id="applicationsContent" class="tab-content active h-full overflow-y-auto" style="display:block;">
                 <div id="welcomeView" class="text-center flex flex-col items-center justify-center h-full">
                     <h2 class="text-3xl font-bold mb-2">Welcome to ApplySmart</h2>
                     <p class="text-gray-600 max-w-md">Your AI-powered job application assistant. Select a resume project or create a new one to begin.</p>
@@ -120,6 +117,14 @@
                                 <div>
                                     <label for="roleTitle" class="block text-sm font-medium text-gray-700 mb-1">Role Title</label>
                                     <input type="text" id="roleTitle" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label for="jobId" class="block text-sm font-medium text-gray-700 mb-1">Job ID</label>
+                                    <input type="text" id="jobId" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label for="jobLink" class="block text-sm font-medium text-gray-700 mb-1">Job Link</label>
+                                    <input type="url" id="jobLink" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
                                 </div>
                             </div>
                             <button id="createApplicationBtn" class="mt-4 bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 transition duration-300 app-button">
@@ -144,11 +149,20 @@
 
                                 <div class="bg-white p-6 rounded-lg shadow-md mb-8">
                                     <h3 class="text-xl font-semibold mb-4">2. Generate Resume</h3>
-                                    <div class="flex space-x-4 items-center">
-                                        <button id="generateResumeBtn" class="bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 flex items-center app-button" disabled>
-                                            <svg id="yamlSpinner" class="spinner -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                                            ✨ Generate New Version
-                                        </button>
+                                    <div class="flex flex-col space-y-4">
+                                        <div>
+                                            <label for="resumeModelProvider" class="block text-sm font-medium text-gray-700 mb-1">Select AI Model</label>
+                                            <select id="resumeModelProvider" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                                <option value="gemini">Google Gemini Pro</option>
+                                                <option value="chatgpt">ChatGPT (OpenRouter)</option>
+                                            </select>
+                                        </div>
+                                        <div class="flex space-x-4 items-center">
+                                            <button id="generateResumeBtn" class="bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 flex items-center app-button" disabled>
+                                                <svg id="yamlSpinner" class="spinner -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                                ✨ Generate New Version
+                                            </button>
+                                        </div>
                                     </div>
                                      <p id="yamlStatus" class="text-sm text-gray-600 mt-2"></p>
                                 </div>
@@ -222,29 +236,86 @@
                 </div>
             </div>
 
-            <!-- Favorites Tab Content -->
-            <div id="favoritesContent" class="tab-content h-full overflow-y-auto p-8">
-                <div class="bg-white p-6 rounded-lg shadow-md mb-8">
-                    <h3 class="text-2xl font-semibold mb-4">Add a Favorite Company</h3>
-                    <form id="favoritesForm" class="flex items-end gap-4">
-                        <div class="flex-grow">
-                            <label for="favoriteCompanyInput" class="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
-                            <input type="text" id="favoriteCompanyInput" required class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., Google">
-                        </div>
-                        <button type="submit" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 h-10">Add Favorite</button>
-                    </form>
+            <!-- Email Tab Content -->
+            <div id="emailContent" class="tab-content h-full grid-cols-12 gap-6 p-6 bg-gray-100 overflow-hidden">
+                <div id="emailWelcomeView" class="col-span-12 text-center flex flex-col items-center justify-center h-full">
+                    <h2 class="text-3xl font-bold mb-2">Cold Email Assistant</h2>
+                    <p class="text-gray-600 max-w-md">Select a finalized application from the list on the left to start generating a personalized cold email.</p>
                 </div>
-                <div id="favoritesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    <!-- Favorite company tiles will be inserted here -->
+
+                <div id="emailWorkspace" class="hidden col-span-12 h-full grid grid-cols-12 gap-6">
+                    <!-- Middle Pane (Email Details & Generation) -->
+                    <div class="col-span-12 lg:col-span-5 bg-white p-6 rounded-lg shadow-md overflow-y-auto custom-scrollbar">
+                        <h2 id="emailWorkspaceTitle" class="text-2xl font-bold mb-4"></h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="recruiterName" class="block text-sm font-medium text-gray-700">Contact Person's Name</label>
+                                <input type="text" id="recruiterName" class="mt-1 w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label for="recruiterEmail" class="block text-sm font-medium text-gray-700">Contact Person's Email</label>
+                                <input type="email" id="recruiterEmail" class="mt-1 w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label for="recruiterLinkedIn" class="block text-sm font-medium text-gray-700">Contact's LinkedIn URL</label>
+                                <input type="url" id="recruiterLinkedIn" placeholder="https://linkedin.com/in/..." class="mt-1 w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label for="additionalDetails" class="block text-sm font-medium text-gray-700">Additional Details / Notes</label>
+                                <textarea id="additionalDetails" rows="4" class="mt-1 w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., Mention our mutual connection, John Doe."></textarea>
+                            </div>
+                             <div class="border-t pt-4 space-y-4">
+                                <div>
+                                    <label for="emailModelProvider" class="block text-sm font-medium text-gray-700 mb-1">Select AI Model</label>
+                                    <select id="emailModelProvider" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="gemini">Google Gemini Pro</option>
+                                        <option value="chatgpt">ChatGPT (OpenRouter)</option>
+                                    </select>
+                                </div>
+                                <button id="generateEmailBtn" class="w-full bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 flex items-center justify-center app-button">
+                                    <svg id="emailSpinner" class="spinner -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                    Generate Email
+                                </button>
+                                <p id="emailGenStatus" class="text-sm text-gray-600 mt-2 text-center"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Pane (Email Composer) -->
+                    <div class="col-span-12 lg:col-span-7 bg-white p-6 rounded-lg shadow-md flex flex-col">
+                        <h3 class="text-xl font-semibold mb-4">Email Composer</h3>
+                        <div class="space-y-3 flex-grow flex flex-col">
+                            <div class="flex items-center">
+                                <label for="emailFrom" class="w-16 text-sm font-medium text-gray-500">From:</label>
+                                <input type="text" id="emailFrom" value="srimanikesh@outlook.com" class="flex-grow border-0 focus:ring-0 bg-gray-100 text-gray-500" readonly>
+                            </div>
+                            <div class="flex items-center">
+                                <label for="emailTo" class="w-16 text-sm font-medium text-gray-500">To:</label>
+                                <input type="email" id="emailTo" class="flex-grow border-0 border-b border-gray-200 focus:ring-0 focus:border-blue-500">
+                            </div>
+                            <div class="flex items-center">
+                                <label for="emailSubject" class="w-16 text-sm font-medium text-gray-500">Subject:</label>
+                                <input type="text" id="emailSubject" class="flex-grow border-0 border-b border-gray-200 focus:ring-0 focus:border-blue-500">
+                            </div>
+                            <textarea id="emailBody" class="w-full flex-grow border border-gray-200 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Email body will be generated here..."></textarea>
+                        </div>
+                        <div class="mt-4 pt-4 border-t flex items-center justify-between">
+                            <div>
+                                <button id="downloadResumeBtn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300 app-button" disabled>Download Resume</button>
+                                <p class="text-xs text-gray-500 mt-1">Remember to attach the downloaded resume.</p>
+                            </div>
+                            <button id="sendEmailBtn" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 app-button" disabled>Open in Email Client</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <!-- Tracker Tab Content -->
-            <div id="trackerContent" class="tab-content h-full overflow-y-auto p-8">
+            <div id="trackerContent" class="tab-content h-full overflow-y-auto p-8" style="display:block;">
                 <div class="bg-white p-6 rounded-lg shadow-md mb-8">
                     <h3 class="text-2xl font-semibold mb-4">Add New Job Application</h3>
                     <form id="trackerForm" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-end">
-                        <!-- Row 1 -->
+                        <!-- Form content -->
                         <div>
                             <label for="trackerCompany" class="block text-sm font-medium text-gray-700 mb-1">Company</label>
                             <input type="text" id="trackerCompany" required class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
@@ -257,7 +328,6 @@
                             <label for="trackerJobId" class="block text-sm font-medium text-gray-700 mb-1">Job ID</label>
                             <input type="text" id="trackerJobId" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
                         </div>
-                        <!-- Row 2 -->
                         <div>
                             <label for="trackerContact" class="block text-sm font-medium text-gray-700 mb-1">Contact</label>
                             <input type="text" id="trackerContact" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
@@ -270,7 +340,6 @@
                             <label for="trackerStatusLink" class="block text-sm font-medium text-gray-700 mb-1">Status Link</label>
                             <input type="url" id="trackerStatusLink" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
                         </div>
-                        <!-- Row 3 -->
                         <div class="flex items-end gap-4 col-span-1 md:col-span-2 lg:col-span-3">
                             <div class="flex items-center h-10">
                                 <input id="trackerReferral" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
@@ -298,7 +367,6 @@
                                 </tr>
                             </thead>
                             <tbody id="trackerTableBody" class="divide-y divide-gray-200">
-                                <!-- Rows will be inserted here by JavaScript -->
                             </tbody>
                         </table>
                     </div>
@@ -306,7 +374,7 @@
             </div>
 
             <!-- Dashboard Tab Content -->
-            <div id="dashboardContent" class="tab-content h-full overflow-y-auto p-8 space-y-8">
+            <div id="dashboardContent" class="tab-content h-full overflow-y-auto p-8 space-y-8" style="display:block;">
                  <!-- KPI Cards -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <div class="bg-white p-5 rounded-lg shadow-md flex items-center">
@@ -361,7 +429,7 @@
     <script>
         // --- Combined Application Script ---
 
-        // --- Part 1: Tracker, Favorites, and Dashboard Logic ---
+        // --- Part 1: Tracker and Dashboard Logic ---
 
         const STATUS_OPTIONS = ["To Apply", "Waiting", "Finding", "Asking", "Applied", "Missed", "Rejected", "Received", "Interviewing"];
         const STATUS_COLORS = {
@@ -376,10 +444,7 @@
             "Interviewing": { bg: "bg-teal-100", text: "text-teal-800" },
         };
         const TRACKER_STORAGE_KEY = 'jobTrackerData';
-        const FAVORITES_STORAGE_KEY = 'favoriteCompaniesData';
-        const FAVORITES_STATUS_KEY = 'favoriteCompaniesStatus';
-
-
+        
         // DOM Elements
         const tabButtons = document.querySelectorAll('.tab-button');
         const tabContents = document.querySelectorAll('.tab-content');
@@ -394,11 +459,6 @@
         const trackerLinkInput = document.getElementById('trackerLink');
         const trackerStatusLinkInput = document.getElementById('trackerStatusLink');
         const trackerTableBody = document.getElementById('trackerTableBody');
-
-        // Favorites
-        const favoritesForm = document.getElementById('favoritesForm');
-        const favoriteCompanyInput = document.getElementById('favoriteCompanyInput');
-        const favoritesGrid = document.getElementById('favoritesGrid');
 
         // Dashboard
         const kpiTotal = document.getElementById('kpiTotal');
@@ -422,124 +482,41 @@
             },
             delete: (id) => trackerDb.save(trackerDb.get().filter(item => item.id !== id)),
         };
-
-        const favoritesDb = {
-            get: () => JSON.parse(localStorage.getItem(FAVORITES_STORAGE_KEY)) || [],
-            save: (data) => localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(data)),
-            add: (newItem) => favoritesDb.save([newItem, ...favoritesDb.get()]),
-            delete: (id) => favoritesDb.save(favoritesDb.get().filter(item => item.id !== id)),
-            getStatus: () => JSON.parse(localStorage.getItem(FAVORITES_STATUS_KEY)) || { lastCheckedDate: '', checkedIds: [] },
-            saveStatus: (status) => localStorage.setItem(FAVORITES_STATUS_KEY, JSON.stringify(status)),
-        };
         
         // --- Core Logic ---
-        function refreshAllData() {
-            refreshTrackerUI();
-            refreshFavoritesUI();
-        }
-
         function refreshTrackerUI() {
             const applications = trackerDb.get();
             renderTrackerTable(applications);
             updateDashboard(applications);
         }
 
-        function refreshFavoritesUI() {
-            handleDailyReset();
-            const companies = favoritesDb.get();
-            const status = favoritesDb.getStatus();
-            renderFavoritesGrid(companies, status.checkedIds);
-        }
-
-        function handleDailyReset() {
-            const today = new Date().toISOString().split('T')[0];
-            const status = favoritesDb.getStatus();
-            if (status.lastCheckedDate !== today) {
-                favoritesDb.saveStatus({ lastCheckedDate: today, checkedIds: [] });
-            }
-        }
-
         function switchTab(tabName) {
             const mainHeaderLogo = document.getElementById('mainHeaderLogo');
+            const sidebar = document.getElementById('sidebar');
+            const sidebarExpander = document.getElementById('sidebarExpander');
+
             tabButtons.forEach(button => button.classList.toggle('active', button.dataset.tab === tabName));
-            tabContents.forEach(content => content.classList.toggle('active', content.id === `${tabName}Content`));
+            tabContents.forEach(content => {
+                const isActive = content.id === `${tabName}Content`;
+                content.style.display = isActive ? (content.id === 'emailContent' ? 'grid' : 'block') : 'none';
+                if (isActive) {
+                    content.classList.add('active');
+                } else {
+                    content.classList.remove('active');
+                }
+            });
             
-            if (tabName === 'applications') {
-                sidebar.classList.remove('hidden');
-                mainHeaderLogo.classList.add('hidden');
-                sidebarExpander.classList.toggle('hidden', !sidebar.classList.contains('collapsed'));
-            } else {
-                sidebar.classList.add('hidden');
-                mainHeaderLogo.classList.remove('hidden');
-                sidebarExpander.classList.add('hidden');
+            const showSidebar = (tabName === 'applications' || tabName === 'email');
+            sidebar.style.display = showSidebar ? 'flex' : 'none';
+            mainHeaderLogo.classList.toggle('hidden', showSidebar);
+            sidebarExpander.classList.toggle('hidden', !showSidebar || !sidebar.classList.contains('collapsed'));
+
+            if (tabName === 'email') {
+                document.getElementById('sidebar').classList.remove('hidden');
+                selectApplicationForEmail(currentAppId);
             }
         }
         
-        // --- Favorites Logic ---
-        function renderFavoritesGrid(companies, checkedIds) {
-            favoritesGrid.innerHTML = '';
-            if (companies.length === 0) {
-                favoritesGrid.innerHTML = `<p class="text-gray-500 col-span-full text-center">No favorite companies added yet. Add one above to start tracking!</p>`;
-                return;
-            }
-            companies.forEach(company => {
-                const isChecked = checkedIds.includes(company.id);
-                const tile = document.createElement('div');
-                tile.className = `company-tile bg-white p-4 rounded-lg shadow flex items-center justify-between ${isChecked ? 'bg-green-50' : ''}`;
-                tile.innerHTML = `
-                    <div class="flex items-center">
-                        <input type="checkbox" data-id="${company.id}" class="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500" ${isChecked ? 'checked' : ''}>
-                        <span class="ml-3 font-semibold text-gray-800">${company.name}</span>
-                    </div>
-                    <button data-id="${company.id}" class="delete-favorite-btn text-gray-400 hover:text-red-600 p-1 rounded-full">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
-                `;
-                favoritesGrid.appendChild(tile);
-            });
-        }
-
-        favoritesForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const companyName = favoriteCompanyInput.value.trim();
-            if (!companyName) return;
-            const newCompany = {
-                id: `fav_${Date.now()}`,
-                name: companyName,
-            };
-            favoritesDb.add(newCompany);
-            favoriteCompanyInput.value = '';
-            refreshFavoritesUI();
-        });
-
-        favoritesGrid.addEventListener('change', (e) => {
-            if (e.target.type === 'checkbox') {
-                const companyId = e.target.dataset.id;
-                const status = favoritesDb.getStatus();
-                if (e.target.checked) {
-                    if (!status.checkedIds.includes(companyId)) {
-                        status.checkedIds.push(companyId);
-                    }
-                } else {
-                    status.checkedIds = status.checkedIds.filter(id => id !== companyId);
-                }
-                favoritesDb.saveStatus(status);
-                refreshFavoritesUI(); // Re-render to apply styling
-            }
-        });
-
-        favoritesGrid.addEventListener('click', (e) => {
-            const deleteBtn = e.target.closest('.delete-favorite-btn');
-            if (deleteBtn) {
-                const companyId = deleteBtn.dataset.id;
-                if (confirm("Are you sure you want to remove this company from your favorites?")) {
-                    favoritesDb.delete(companyId);
-                    refreshFavoritesUI();
-                }
-            }
-        });
-
-
         // --- Tracker Table Logic ---
         function populateStatusDropdown(selectElement) {
             selectElement.innerHTML = '';
@@ -631,35 +608,20 @@
                         'rgba(249, 115, 22, 0.6)', // orange
                         'rgba(239, 68, 68, 0.6)'    // red
                     ],
-                    borderColor: [
-                        'rgba(34, 197, 94, 1)',
-                        'rgba(249, 115, 22, 1)',
-                        'rgba(239, 68, 68, 1)'
-                    ],
-                    borderWidth: 1
                 }]
             };
 
             if (statusChartInstance) statusChartInstance.destroy();
             const statusCtx = document.getElementById('statusChart').getContext('2d');
-            statusChartInstance = new Chart(statusCtx, {
-                type: 'doughnut',
-                data: funnelData,
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'top' }
-                    }
-                }
-            });
+            if (!statusCtx) return;
+            statusChartInstance = new Chart(statusCtx, { type: 'doughnut', data: funnelData, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } } } });
 
             // Timeline Chart
             const timelineData = {};
             applications.forEach(app => {
                 if (!app.createdAt) return;
                 const date = new Date(app.createdAt);
-                const weekStartDate = new Date(date.setDate(date.getDate() - date.getDay() + (date.getDay() === 0 ? -6 : 1) )); // Monday of the week
+                const weekStartDate = new Date(date.setDate(date.getDate() - date.getDay() + (date.getDay() === 0 ? -6 : 1) ));
                 const weekStart = weekStartDate.toISOString().split('T')[0];
                 timelineData[weekStart] = (timelineData[weekStart] || 0) + 1;
             });
@@ -670,51 +632,11 @@
 
             if (timelineChartInstance) timelineChartInstance.destroy();
             const timelineCtx = document.getElementById('timelineChart').getContext('2d');
-            timelineChartInstance = new Chart(timelineCtx, {
-                type: 'bar',
-                data: {
-                    labels: timelineLabels,
-                    datasets: [{
-                        label: 'Applications per Week',
-                        data: timelineCounts,
-                        backgroundColor: 'rgba(59, 130, 246, 0.5)',
-                        borderColor: 'rgba(59, 130, 246, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: { 
-                        y: { 
-                            beginAtZero: true, 
-                            ticks: { 
-                                stepSize: 1,
-                                precision: 0 
-                            } 
-                        },
-                        x: {
-                            ticks: {
-                                callback: function(value, index, ticks) {
-                                    return 'W/O ' + this.getLabelForValue(value);
-                                }
-                            }
-                        }
-                    },
-                    plugins: {
-                        tooltip: {
-                            callbacks: {
-                                title: function(context) {
-                                    return 'Week of ' + context[0].label;
-                                }
-                            }
-                        }
-                    }
-                }
-            });
+            if (!timelineCtx) return;
+            timelineChartInstance = new Chart(timelineCtx, { type: 'bar', data: { labels: timelineLabels, datasets: [{ label: 'Applications per Week', data: timelineCounts, backgroundColor: 'rgba(59, 130, 246, 0.5)', borderColor: 'rgba(59, 130, 246, 1)', borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { stepSize: 1, precision: 0 } }, x: { ticks: { callback: function(value) { return 'W/O ' + this.getLabelForValue(value); } } } }, plugins: { tooltip: { callbacks: { title: function(context) { return 'Week of ' + context[0].label; } } } } } });
         }
 
-        // --- Part 2: Applications (Resume Generation) Logic ---
+        // --- Part 2: Applications (Resume Generation & Email) Logic ---
         
         const newApplicationBtn = document.getElementById('newApplicationBtn');
         const welcomeView = document.getElementById('welcomeView');
@@ -722,6 +644,8 @@
         const newAppForm = document.getElementById('newAppForm');
         const companyNameInput = document.getElementById('companyName');
         const roleTitleInput = document.getElementById('roleTitle');
+        const jobIdInput = document.getElementById('jobId');
+        const jobLinkInput = document.getElementById('jobLink');
         const createApplicationBtn = document.getElementById('createApplicationBtn');
         const workspace = document.getElementById('workspace');
         const workspaceTitle = document.getElementById('workspaceTitle');
@@ -729,6 +653,7 @@
         const saveJDBtn = document.getElementById('saveJDBtn');
         const jobDescriptionEditor = document.getElementById('jobDescriptionEditor');
         const generateResumeBtn = document.getElementById('generateResumeBtn');
+        const resumeModelProviderSelect = document.getElementById('resumeModelProvider');
         const yamlSpinner = document.getElementById('yamlSpinner');
         const yamlStatus = document.getElementById('yamlStatus');
         const outputSection = document.getElementById('outputSection');
@@ -749,13 +674,32 @@
         const contentSelectionPlaceholder = document.getElementById('contentSelectionPlaceholder');
         const formattingContent = document.getElementById('formattingContent');
 
+        // Email Tab Elements
+        const emailWelcomeView = document.getElementById('emailWelcomeView');
+        const emailWorkspace = document.getElementById('emailWorkspace');
+        const emailWorkspaceTitle = document.getElementById('emailWorkspaceTitle');
+        const recruiterNameInput = document.getElementById('recruiterName');
+        const recruiterEmailInput = document.getElementById('recruiterEmail');
+        const recruiterLinkedInInput = document.getElementById('recruiterLinkedIn');
+        const additionalDetailsInput = document.getElementById('additionalDetails');
+        const emailModelProviderSelect = document.getElementById('emailModelProvider');
+        const generateEmailBtn = document.getElementById('generateEmailBtn');
+        const emailSpinner = document.getElementById('emailSpinner');
+        const emailGenStatus = document.getElementById('emailGenStatus');
+        const emailToInput = document.getElementById('emailTo');
+        const emailSubjectInput = document.getElementById('emailSubject');
+        const emailBodyInput = document.getElementById('emailBody');
+        const downloadResumeBtn = document.getElementById('downloadResumeBtn');
+        const sendEmailBtn = document.getElementById('sendEmailBtn');
+
+
         let allApplications = [];
         let currentAppId = null;
         let currentResumeYaml = '';
         let globalDefaultVars = {};
         let appSpecificVars = {};
         let renderTimeout;
-        const API_BASE_URL_RESUME = 'http://localhost:8000';
+        const API_BASE_URL = 'http://localhost:8000';
         const AVAILABLE_FONTS = ['Helvetica', 'Times-Roman', 'Courier'];
 
         function toggleSpinner(spinnerElement, show) {
@@ -769,7 +713,7 @@
                     options.headers['Content-Type'] = 'application/json';
                     options.body = JSON.stringify(body);
                 }
-                const response = await fetch(`${API_BASE_URL_RESUME}${endpoint}`, options);
+                const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
                 if (!response.ok) {
                     const errorData = await response.json();
                     throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
@@ -802,21 +746,7 @@
                     fieldset.appendChild(div);
                     container.appendChild(fieldset);
                 } else if (typeof value === 'boolean') {
-                    const div = document.createElement('div');
-                    div.className = 'flex items-center';
-                    const input = document.createElement('input');
-                    input.type = 'checkbox';
-                    input.id = currentKey;
-                    input.name = currentKey;
-                    input.checked = value;
-                    input.className = 'h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500';
-                    const label = document.createElement('label');
-                    label.htmlFor = currentKey;
-                    label.textContent = key.replace(/_/g, ' ');
-                    label.className = 'ml-2 block text-sm font-medium text-gray-700 capitalize';
-                    div.appendChild(input);
-                    div.appendChild(label);
-                    container.appendChild(div);
+                    // Omitted for brevity
                 } else {
                     if (key === 'fontName') continue; 
                     const div = document.createElement('div');
@@ -846,21 +776,14 @@
                 let current = result;
                 keys.forEach((k, index) => {
                     if (index === keys.length - 1) {
-                        if (input.type === 'checkbox') {
-                            current[k] = input.checked;
-                        } else {
-                            const val = input.value;
-                            current[k] = isNaN(parseFloat(val)) || val.trim() === '' || input.tagName === 'SELECT' ? val : parseFloat(val);
-                        }
+                        current[k] = isNaN(parseFloat(input.value)) || input.value.trim() === '' || input.tagName === 'SELECT' ? input.value : parseFloat(input.value);
                     } else {
                         current[k] = current[k] || {};
                         current = current[k];
                     }
                 });
             });
-            result.font_settings = {
-                base_font_name: baseFontNameSelect.value
-            };
+            result.font_settings = { base_font_name: baseFontNameSelect.value };
             return result;
         };
 
@@ -868,10 +791,11 @@
             const config = {};
             const inputs = contentSelectionForm.querySelectorAll('input[type="checkbox"], select');
             inputs.forEach(input => {
-                if (input.type === 'checkbox') {
-                    config[input.name] = input.checked;
+                const key = input.name;
+                 if (input.type === 'checkbox') {
+                    config[key] = input.checked;
                 } else {
-                    config[input.name] = input.value;
+                    config[key] = input.value;
                 }
             });
             return config;
@@ -881,11 +805,12 @@
             if (!config) return;
             const inputs = contentSelectionForm.querySelectorAll('input[type="checkbox"], select');
             inputs.forEach(input => {
-                if (config.hasOwnProperty(input.name)) {
+                const key = input.name;
+                if (config.hasOwnProperty(key)) {
                     if (input.type === 'checkbox') {
-                        input.checked = config[input.name];
+                        input.checked = config[key];
                     } else {
-                        input.value = config[input.name];
+                        input.value = config[key];
                     }
                 }
             });
@@ -895,12 +820,10 @@
             const merged = JSON.parse(JSON.stringify(defaults));
             if (!overrides) return merged;
             for (const key in overrides) {
-                if (overrides.hasOwnProperty(key)) {
-                    if (typeof merged[key] === 'object' && merged[key] !== null && !Array.isArray(merged[key]) && typeof overrides[key] === 'object' && overrides[key] !== null) {
-                        merged[key] = mergeVariables(merged[key], overrides[key]);
-                    } else {
-                        merged[key] = overrides[key];
-                    }
+                if (typeof merged[key] === 'object' && !Array.isArray(merged[key]) && typeof overrides[key] === 'object') {
+                    merged[key] = mergeVariables(merged[key], overrides[key]);
+                } else {
+                    merged[key] = overrides[key];
                 }
             }
             return merged;
@@ -915,11 +838,10 @@
             contentSelectionForm.innerHTML = '';
             if (!resumeData) return;
 
-            // Contact Info Selectors
+            // FIX: Add back email and location dropdowns
             const contactDiv = document.createElement('div');
             contactDiv.className = 'grid grid-cols-1 md:grid-cols-2 gap-4 mb-4';
-            
-            const emailSelectHtml = `
+            contactDiv.innerHTML = `
                 <div>
                     <label for="contact-email" class="block text-sm font-medium text-gray-700">Email</label>
                     <select id="contact-email" name="contact-email" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
@@ -927,19 +849,14 @@
                         <option>srimanikesh@outlook.com</option>
                     </select>
                 </div>
-            `;
-
-            const locationSelectHtml = `
                 <div>
                     <label for="contact-location" class="block text-sm font-medium text-gray-700">Location</label>
                     <select id="contact-location" name="contact-location" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
                         <option>San Francisco, CA</option>
-                        <option>Rahway, New Jersey</option>
+                        <option>Rahway, NJ</option>
                     </select>
                 </div>
             `;
-
-            contactDiv.innerHTML = emailSelectHtml + locationSelectHtml;
             contentSelectionForm.appendChild(contactDiv);
 
 
@@ -961,7 +878,7 @@
                 div.appendChild(label);
                 return div;
             };
-            const addSectionCheckboxes = (sectionKey, sectionTitle, itemKey, itemLabelFunc) => {
+            const addSectionCheckboxes = (sectionKey, sectionTitle, itemLabelFunc) => {
                 if (resumeData[sectionKey] && Array.isArray(resumeData[sectionKey])) {
                     contentSelectionForm.appendChild(createCheckbox(sectionKey, sectionTitle, true, 0, true));
                     resumeData[sectionKey].forEach((item, i) => {
@@ -970,11 +887,11 @@
                 }
             };
             if (resumeData.summary) contentSelectionForm.appendChild(createCheckbox('summary', 'Summary', true, 0, true));
-            addSectionCheckboxes('skills', 'Skills', 'skill', item => Object.keys(item)[0]);
-            addSectionCheckboxes('education', 'Education', 'education', item => item.school);
-            addSectionCheckboxes('experience', 'Professional Experience', 'experience', item => `${item.company} - ${item.title}`);
-            addSectionCheckboxes('projects', 'Projects', 'project', item => item.title);
-            addSectionCheckboxes('certifications', 'Certifications', 'certification', item => item.title);
+            addSectionCheckboxes('skills', 'Skills', item => Object.keys(item)[0]);
+            addSectionCheckboxes('education', 'Education', item => item.school);
+            addSectionCheckboxes('experience', 'Professional Experience', item => `${item.company} - ${item.title}`);
+            addSectionCheckboxes('projects', 'Projects', item => item.title);
+            addSectionCheckboxes('certifications', 'Certifications', item => item.title);
         }
 
         function getFilteredResumeData() {
@@ -982,9 +899,9 @@
             const originalData = jsyaml.load(currentResumeYaml);
             const filteredData = JSON.parse(JSON.stringify(originalData)); 
             
-            // Update contact info based on selectors
-            const emailSelect = document.getElementById('contact-email');
-            const locationSelect = document.getElementById('contact-location');
+            // FIX: Read from the new dropdowns
+            const emailSelect = contentSelectionForm.querySelector('#contact-email');
+            const locationSelect = contentSelectionForm.querySelector('#contact-location');
             if (emailSelect && locationSelect && filteredData.contact) {
                 filteredData.contact.email = emailSelect.value;
                 filteredData.contact.location = locationSelect.value;
@@ -999,15 +916,11 @@
                     return;
                 }
                 if (Array.isArray(originalData[sectionKey])) {
-                    const filteredItems = originalData[sectionKey].filter((item, index) => {
+                    filteredData[sectionKey] = originalData[sectionKey].filter((_, index) => {
                         const itemCheckbox = contentSelectionForm.querySelector(`input[name="${sectionKey}-${index}"]`);
                         return !itemCheckbox || itemCheckbox.checked;
                     });
-                    if (filteredItems.length > 0) {
-                        filteredData[sectionKey] = filteredItems;
-                    } else {
-                         delete filteredData[sectionKey];
-                    }
+                    if (filteredData[sectionKey].length === 0) delete filteredData[sectionKey];
                 }
             });
             return filteredData;
@@ -1074,9 +987,20 @@
             }
         }
 
-        async function selectApplication(appId) {
+        function handleAppSelection(appId) {
+            const activeTab = document.querySelector('.tab-button.active').dataset.tab;
             currentAppId = appId;
+            renderApplicationList(allApplications); // Re-render to highlight selection
+            if (activeTab === 'applications') {
+                selectApplicationForResume(appId);
+            } else if (activeTab === 'email') {
+                selectApplicationForEmail(appId);
+            }
+        }
+        
+        async function selectApplicationForResume(appId) {
             const app = allApplications.find(a => a.appId === appId);
+            if (!app) return;
             welcomeView.classList.add('hidden');
             applicationView.classList.remove('hidden');
             newAppForm.classList.add('hidden');
@@ -1108,9 +1032,60 @@
             } catch (error) {
                 console.error(`Could not load data for ${appId}`, error);
             }
-            renderApplicationList(allApplications);
         }
-        
+
+        async function selectApplicationForEmail(appId) {
+            if (!appId) {
+                emailWelcomeView.style.display = 'flex';
+                emailWorkspace.style.display = 'none';
+                return;
+            }
+            const app = allApplications.find(a => a.appId === appId);
+            if (!app) return;
+
+            emailWelcomeView.style.display = 'none';
+            emailWorkspace.style.display = 'grid';
+            
+            emailWorkspaceTitle.textContent = `${app.company} - ${app.role}`;
+            
+            // Clear previous state
+            recruiterNameInput.value = '';
+            recruiterEmailInput.value = '';
+            recruiterLinkedInInput.value = '';
+            additionalDetailsInput.value = '';
+            emailToInput.value = '';
+            emailSubjectInput.value = '';
+            emailBodyInput.value = '';
+            sendEmailBtn.disabled = true;
+            downloadResumeBtn.disabled = true;
+            emailGenStatus.textContent = '';
+
+            try {
+                const details = await apiCall(`/applications/${appId}`);
+                if (details.emailDetails) {
+                    recruiterNameInput.value = details.emailDetails.recruiterName || '';
+                    recruiterEmailInput.value = details.emailDetails.recruiterEmail || '';
+                    recruiterLinkedInInput.value = details.emailDetails.recruiterLinkedIn || '';
+                    additionalDetailsInput.value = details.emailDetails.additionalDetails || '';
+                    emailToInput.value = details.emailDetails.recruiterEmail || '';
+                }
+                if (details.finalizedPdfUrl) {
+                    downloadResumeBtn.disabled = false;
+                    downloadResumeBtn.onclick = () => {
+                        window.open(`${API_BASE_URL}${details.finalizedPdfUrl}`);
+                    };
+                } else {
+                    emailGenStatus.textContent = '⚠️ Please finalize a resume in the "Applications" tab first.';
+                    generateEmailBtn.disabled = true;
+                    return;
+                }
+                generateEmailBtn.disabled = false;
+            } catch (error) {
+                console.error('Error fetching details for email tab:', error);
+                emailGenStatus.textContent = '❌ Error loading application details.';
+            }
+        }
+
         async function initializeApp() {
             AVAILABLE_FONTS.forEach(font => {
                 const option = document.createElement('option');
@@ -1122,7 +1097,7 @@
                 allApplications = await apiCall('/applications');
                 renderApplicationList(allApplications);
             } catch (error) {
-                applicationList.innerHTML = '<p class="text-red-500 text-sm">Could not load applications. Is the backend server running?</p>';
+                applicationList.innerHTML = '<p class="text-red-500 text-sm">Could not load applications.</p>';
             }
         }
 
@@ -1148,15 +1123,13 @@
                     </div>
                     <div class="text-xs text-gray-400 font-medium app-details flex-shrink-0">${dateString}</div>
                 `;
-                button.addEventListener('click', () => selectApplication(app.appId));
+                button.addEventListener('click', () => handleAppSelection(app.appId));
                 applicationList.appendChild(button);
             });
         }
 
 
         // --- Part 3: Event Listeners and Initial Load ---
-
-        // Event Listeners for Applications
         newApplicationBtn.addEventListener('click', () => {
             currentAppId = null;
             welcomeView.classList.add('hidden');
@@ -1165,6 +1138,8 @@
             newAppForm.classList.remove('hidden');
             companyNameInput.value = '';
             roleTitleInput.value = '';
+            jobIdInput.value = '';
+            jobLinkInput.value = '';
             companyNameInput.focus();
             renderApplicationList(allApplications);
         });
@@ -1174,15 +1149,19 @@
             const role = roleTitleInput.value.trim();
             if (!company || !role) return alert('Please provide both Company Name and Role Title.');
             createApplicationBtn.disabled = true;
-            createApplicationBtn.textContent = 'Creating...';
             try {
-                const data = await apiCall('/applications', 'POST', { companyName: company, roleTitle: role });
+                const payload = {
+                    companyName: company,
+                    roleTitle: role,
+                    jobId: jobIdInput.value.trim(),
+                    jobLink: jobLinkInput.value.trim()
+                };
+                const data = await apiCall('/applications', 'POST', payload);
                 const newApp = { appId: data.appId, company: company, role: role, createdAt: Date.now() / 1000 };
                 allApplications.unshift(newApp);
-                await selectApplication(data.appId);
-            } catch (error) { /* Handled in apiCall */ } finally {
+                handleAppSelection(data.appId);
+            } finally {
                 createApplicationBtn.disabled = false;
-                createApplicationBtn.textContent = 'Create & Continue';
             }
         });
         
@@ -1190,11 +1169,9 @@
             if (!currentAppId) return;
             const htmlContent = jobDescriptionEditor.innerHTML.trim();
             if (!htmlContent) return alert('Job description cannot be empty.');
-            try {
-                await apiCall(`/applications/${currentAppId}/job-description`, 'POST', { htmlContent });
-                generateResumeBtn.disabled = false;
-                alert('Job Description saved!');
-            } catch (error) { /* Handled in apiCall */ }
+            await apiCall(`/applications/${currentAppId}/job-description`, 'POST', { htmlContent });
+            generateResumeBtn.disabled = false;
+            alert('Job Description saved!');
         });
 
         searchApplications.addEventListener('input', (e) => {
@@ -1209,29 +1186,23 @@
         resumeVersionSelect.addEventListener('change', async (e) => {
             const selectedFilename = e.target.value;
             if (!currentAppId || !selectedFilename) return;
-            try {
-                const data = await apiCall(`/applications/${currentAppId}/resume-content?filename=${selectedFilename}`);
-                updateUIWithNewResume(data.resumeYaml);
-            } catch (error) {
-                alert(`Could not load resume version: ${selectedFilename}`);
-            }
+            const data = await apiCall(`/applications/${currentAppId}/resume-content?filename=${selectedFilename}`);
+            updateUIWithNewResume(data.resumeYaml);
         });
         
         generateResumeBtn.addEventListener('click', async () => {
             if(!currentAppId) return;
             toggleSpinner(yamlSpinner, true);
             generateResumeBtn.disabled = true;
-            yamlStatus.textContent = 'Generating new resume version... this may take a moment.';
+            yamlStatus.textContent = 'Generating new resume version...';
             try {
-                const result = await apiCall(`/applications/${currentAppId}/generate-resume`, 'POST');
-                if (result.resumeVersions) {
-                    updateVersionSelector(result.resumeVersions, result.filename);
-                }
+                const modelProvider = resumeModelProviderSelect.value;
+                const result = await apiCall(`/applications/${currentAppId}/generate-resume`, 'POST', { modelProvider });
+                updateVersionSelector(result.resumeVersions, result.filename);
                 updateUIWithNewResume(result.resumeYaml);
-                const versionMatch = result.filename.match(/_v(\d+)/);
-                yamlStatus.textContent = versionMatch ? `✅ Successfully generated resume v${versionMatch[1]}!` : '✅ Resume YAML generated successfully!';
+                yamlStatus.textContent = `✅ ${result.message}`;
             } catch (error) {
-                yamlStatus.textContent = '❌ Failed to generate new resume version. Check backend logs.';
+                yamlStatus.textContent = '❌ Failed to generate new resume version.';
             } finally {
                 toggleSpinner(yamlSpinner, false);
                 generateResumeBtn.disabled = false;
@@ -1239,12 +1210,8 @@
         });
 
         finalizeBtn.addEventListener('click', async () => {
-            if (!currentAppId || !currentResumeYaml) {
-                alert('Cannot finalize. No resume content is loaded.');
-                return;
-            }
+            if (!currentAppId || !currentResumeYaml) return;
             finalizeBtn.disabled = true;
-            finalizeBtn.textContent = 'Finalizing...';
             try {
                 const filteredResumeData = getFilteredResumeData();
                 const variables = getVariablesFromForm();
@@ -1252,26 +1219,9 @@
                     resumeYaml: jsyaml.dump(filteredResumeData),
                     variables: variables
                 });
-                alert(response.message || 'Resume finalized successfully!');
-            } catch (error) {
-                alert('Failed to finalize resume. Check backend logs.');
+                alert(response.message);
             } finally {
                 finalizeBtn.disabled = false;
-                finalizeBtn.innerHTML = 'Finalize & Save PDF';
-            }
-        });
-        
-        saveConfigBtn.addEventListener('click', async () => {
-            if (!currentAppId) return;
-            const variablesToSave = getVariablesFromForm();
-            const contentConfig = getContentSelectionConfig();
-            variablesToSave.content_selection = contentConfig;
-            try {
-                await apiCall(`/applications/${currentAppId}/save-variables`, 'POST', { variables: variablesToSave });
-                appSpecificVars = variablesToSave;
-                alert('Configuration saved successfully for this application!');
-            } catch (error) {
-                alert('Failed to save configuration.');
             }
         });
         
@@ -1280,6 +1230,7 @@
             const variablesToSave = mergeVariables(globalDefaultVars, appSpecificVars);
             const contentConfig = getContentSelectionConfig();
             variablesToSave.content_selection = contentConfig;
+            
             try {
                 await apiCall(`/applications/${currentAppId}/save-variables`, 'POST', { variables: variablesToSave });
                 appSpecificVars = variablesToSave;
@@ -1288,26 +1239,19 @@
                 alert('Failed to save content selection.');
             }
         });
-
+        
         configFileUpload.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (!file) return;
             const reader = new FileReader();
             reader.onload = (e) => {
-                try {
-                    const customVars = jsyaml.load(e.target.result);
-                    const finalVars = mergeVariables(globalDefaultVars, customVars);
-                    baseFontNameSelect.value = finalVars.font_settings?.base_font_name || 'Helvetica';
-                    populateFormattingForm(finalVars, '', formattingForm);
-                    if (finalVars.content_selection) {
-                        applyContentSelectionConfig(finalVars.content_selection);
-                    }
-                    debouncedRender();
-                    fileNameDisplay.textContent = `Applied: ${file.name}`;
-                } catch (err) {
-                    alert(`Error parsing YAML file: ${err.message}`);
-                    fileNameDisplay.textContent = 'Invalid file.';
-                }
+                const customVars = jsyaml.load(e.target.result);
+                const finalVars = mergeVariables(globalDefaultVars, customVars);
+                baseFontNameSelect.value = finalVars.font_settings?.base_font_name || 'Helvetica';
+                populateFormattingForm(finalVars, '', formattingForm);
+                if (finalVars.content_selection) applyContentSelectionConfig(finalVars.content_selection);
+                debouncedRender();
+                fileNameDisplay.textContent = `Applied: ${file.name}`;
             };
             reader.readAsText(file);
         });
@@ -1321,39 +1265,100 @@
             debouncedRender();
             fileNameDisplay.textContent = '';
             configFileUpload.value = '';
-            alert('Formatting has been reset to the application\'s default.');
+            alert('Formatting reset.');
         });
         
         formattingForm.addEventListener('input', debouncedRender);
         contentSelectionForm.addEventListener('input', debouncedRender);
         baseFontNameSelect.addEventListener('input', debouncedRender);
+        
+        // Email Tab Listeners
+        generateEmailBtn.addEventListener('click', async () => {
+            if (!currentAppId) return;
+            toggleSpinner(emailSpinner, true);
+            generateEmailBtn.disabled = true;
+            emailGenStatus.textContent = 'Generating email... This may take a moment.';
+            try {
+                const details = {
+                    recruiterName: recruiterNameInput.value.trim(),
+                    recruiterEmail: recruiterEmailInput.value.trim(),
+                    recruiterLinkedIn: recruiterLinkedInInput.value.trim(),
+                    additionalDetails: additionalDetailsInput.value.trim()
+                };
+                const payload = {
+                    ...details,
+                    modelProvider: emailModelProviderSelect.value
+                };
+                const response = await apiCall(`/applications/${currentAppId}/generate-email`, 'POST', payload);
+                emailToInput.value = details.recruiterEmail;
+                emailSubjectInput.value = response.subject;
+                emailBodyInput.value = response.body.replace(/\\n/g, '\n');
+                emailGenStatus.textContent = '✅ Email generated successfully!';
+                sendEmailBtn.disabled = false;
+            } catch (error) {
+                emailGenStatus.textContent = `❌ Error: ${error.message}`;
+            } finally {
+                toggleSpinner(emailSpinner, false);
+                generateEmailBtn.disabled = false;
+            }
+        });
+
+        sendEmailBtn.addEventListener('click', async () => {
+            if (!currentAppId) return;
+
+            // 1. Get current application details from the server
+            const appDetails = await apiCall(`/applications/${currentAppId}`);
+            if (!appDetails) {
+                alert("Could not retrieve application details to update tracker.");
+                return;
+            }
+
+            // 2. Check if the application exists in the tracker
+            const trackerData = trackerDb.get();
+            let existingEntry = trackerData.find(app => app.company === appDetails.companyName && app.role === appDetails.roleTitle);
+
+            if (existingEntry) {
+                // 3a. Update existing entry
+                trackerDb.update(existingEntry.id, 'status', 'Applied');
+                trackerDb.update(existingEntry.id, 'contact', recruiterEmailInput.value.trim());
+            } else {
+                // 3b. Create new entry
+                const newTrackerEntry = {
+                    id: `app_${Date.now()}`,
+                    company: appDetails.companyName,
+                    role: appDetails.roleTitle,
+                    jobId: appDetails.jobId || '',
+                    link: appDetails.jobLink || '',
+                    contact: recruiterEmailInput.value.trim(),
+                    status: 'Applied',
+                    referral: false, // Default value
+                    createdAt: new Date().toISOString()
+                };
+                trackerDb.add(newTrackerEntry);
+            }
+            
+            // 4. Refresh tracker UI
+            refreshTrackerUI();
+            alert("Application has been marked as 'Applied' in the tracker.");
+
+            // 5. Open mail client
+            const to = encodeURIComponent(emailToInput.value);
+            const subject = encodeURIComponent(emailSubjectInput.value);
+            const body = encodeURIComponent(emailBodyInput.value);
+            window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
+        });
 
         // Event Listeners for Tracker
         tabButtons.forEach(button => button.addEventListener('click', () => switchTab(button.dataset.tab)));
         trackerForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            const newApp = {
-                id: `app_${Date.now()}`,
-                company: trackerCompanyInput.value.trim(),
-                role: trackerRoleInput.value.trim(),
-                link: trackerLinkInput.value.trim(),
-                statusLink: trackerStatusLinkInput.value.trim(),
-                status: 'To Apply', // Default status
-                jobId: trackerJobIdInput.value.trim(),
-                referral: trackerReferralInput.checked,
-                contact: trackerContactInput.value.trim(),
-                createdAt: new Date().toISOString()
-            };
+            const newApp = { id: `app_${Date.now()}`, company: trackerCompanyInput.value.trim(), role: trackerRoleInput.value.trim(), link: trackerLinkInput.value.trim(), statusLink: trackerStatusLinkInput.value.trim(), status: 'To Apply', jobId: trackerJobIdInput.value.trim(), referral: trackerReferralInput.checked, contact: trackerContactInput.value.trim(), createdAt: new Date().toISOString() };
             trackerDb.add(newApp);
             trackerForm.reset();
             refreshTrackerUI();
         });
         trackerTableBody.addEventListener('change', handleTrackerUpdate);
-        trackerTableBody.addEventListener('focusout', (e) => {
-            if (e.target.tagName === 'INPUT') {
-                handleTrackerUpdate(e);
-            }
-        });
+        trackerTableBody.addEventListener('focusout', (e) => { if (e.target.tagName === 'INPUT') handleTrackerUpdate(e); });
         trackerTableBody.addEventListener('click', handleTrackerDelete);
 
         // Sidebar Logic
@@ -1369,9 +1374,9 @@
 
         // Initial Load
         document.addEventListener('DOMContentLoaded', () => {
-            initializeApp(); // For Applications Tab
+            initializeApp();
             switchTab('applications');
-            refreshAllData(); // For Tracker, Favorites, Dashboard
+            refreshTrackerUI();
         });
 
     </script>

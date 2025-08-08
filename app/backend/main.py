@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 
 # Import modularized functions and classes
 from utils import get_app_id, APPLICATIONS_DIR, BASE_RESUME_PATH, load_variables, merge_variables
-from llm_services import agent_resume_tailor
+from llm_services import agent_resume_tailor, agent_cold_email_generator
 from pdf_services import ATSResumePDFGenerator
 
 # --- Load Environment Variables ---
@@ -21,8 +21,8 @@ load_dotenv()
 # --- App Initialization ---
 app = FastAPI(
     title="ApplySmart Backend",
-    description="Manages job applications and renders PDFs with dynamic formatting.",
-    version="14.0.0" # Version bump for skill reordering
+    description="Manages job applications, renders PDFs, and generates cold emails.",
+    version="16.0.0" # Version bump for multi-model support
 )
 
 # --- CORS Middleware ---
@@ -33,9 +33,14 @@ app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=True
 class ApplicationData(BaseModel):
     companyName: str
     roleTitle: str
+    jobId: Optional[str] = ""
+    jobLink: Optional[str] = ""
 
 class JobDescriptionData(BaseModel):
     htmlContent: str
+    
+class GenerateResumeRequest(BaseModel):
+    modelProvider: str
 
 class RenderRequestData(BaseModel):
     resumeYaml: str
@@ -47,6 +52,14 @@ class SaveVariablesRequest(BaseModel):
 class FinalizeRequest(BaseModel):
     resumeYaml: str
     variables: Dict[str, Any]
+
+class EmailGenerationRequest(BaseModel):
+    recruiterName: Optional[str] = ""
+    recruiterEmail: Optional[str] = ""
+    recruiterLinkedIn: Optional[str] = ""
+    additionalDetails: Optional[str] = ""
+    modelProvider: str
+
 
 # --- Helper Functions ---
 def get_resume_versions(app_path: str) -> List[str]:
@@ -74,30 +87,34 @@ def merge_resume_data(fixed_data: Dict, generated_data: Dict) -> Dict:
     """Merges the fixed and LLM-generated resume data."""
     final_resume = fixed_data.copy()
 
-    # Add summary
     if 'summary' in generated_data:
         final_resume['summary'] = generated_data['summary']
     
-    # FIX: Replace skills with the reordered list from the LLM.
     if 'skills_reordered' in generated_data:
         final_resume['skills'] = generated_data['skills_reordered']
-    # Fallback to the original skills if the LLM doesn't provide a reordered list.
     elif 'skills' in fixed_data:
         final_resume['skills'] = fixed_data['skills']
 
-    # Coursework is fixed and does not need to be merged from generated data.
-
-    # Add experience bullets
     if 'experience_bullets' in generated_data and 'experience' in final_resume:
         for i, exp_bullets in enumerate(generated_data['experience_bullets']):
             if i < len(final_resume['experience']):
                 final_resume['experience'][i]['bullets'] = exp_bullets.get('bullets', [])
 
-    # Replace projects with the reordered list
     if 'projects_reordered' in generated_data:
         final_resume['projects'] = generated_data['projects_reordered']
 
     return final_resume
+
+def update_app_details(app_path: str, new_details: Dict):
+    """Reads, updates, and writes app_details.json."""
+    details_path = os.path.join(app_path, "app_details.json")
+    details = {}
+    if os.path.exists(details_path):
+        with open(details_path, 'r') as f:
+            details = json.load(f)
+    details.update(new_details)
+    with open(details_path, 'w') as f:
+        json.dump(details, f, indent=2)
 
 
 # --- API Endpoints ---
@@ -157,7 +174,7 @@ def create_application(data: ApplicationData):
     
     details_path = os.path.join(app_path, "app_details.json")
     with open(details_path, 'w') as f:
-        json.dump({"companyName": data.companyName, "roleTitle": data.roleTitle}, f)
+        json.dump(data.dict(), f, indent=2)
 
     return {"message": "Application created successfully", "appId": app_id}
 
@@ -166,11 +183,17 @@ def get_application_details(app_id: str):
     app_path = os.path.join(APPLICATIONS_DIR, app_id)
     if not os.path.isdir(app_path): raise HTTPException(status_code=404, detail="Application not found.")
     
+    details_path = os.path.join(app_path, "app_details.json")
     jd_path = os.path.join(app_path, "job_description.html")
     
     resume_versions = get_resume_versions(app_path)
     latest_resume_file = resume_versions[0] if resume_versions else None
     yaml_path = os.path.join(app_path, latest_resume_file) if latest_resume_file else None
+
+    details = {}
+    if os.path.exists(details_path):
+        with open(details_path, 'r') as f:
+            details = json.load(f)
 
     jd_content = ""
     if os.path.exists(jd_path):
@@ -186,11 +209,24 @@ def get_application_details(app_id: str):
         with open(custom_vars_path, 'r', encoding='utf-8') as f:
             custom_vars = yaml.safe_load(f)
 
+    finalized_pdf_path = os.path.join(app_path, f"Resume_{details.get('name', '').replace(' ', '_')}.pdf")
+    
     return {
+        "companyName": details.get("companyName"),
+        "roleTitle": details.get("roleTitle"),
+        "jobId": details.get("jobId"),
+        "jobLink": details.get("jobLink"),
         "jobDescription": jd_content, 
         "resumeYaml": yaml_content, 
         "customVariables": custom_vars, 
-        "resumeVersions": resume_versions
+        "resumeVersions": resume_versions,
+        "emailDetails": {
+            "recruiterName": details.get("recruiterName", ""),
+            "recruiterEmail": details.get("recruiterEmail", ""),
+            "recruiterLinkedIn": details.get("recruiterLinkedIn", ""),
+            "additionalDetails": details.get("additionalDetails", "")
+        },
+        "finalizedPdfUrl": f"/applications/{app_id}/finalized-pdf" if os.path.exists(finalized_pdf_path) else None
     }
 
 @app.get("/applications/{app_id}/resume-content")
@@ -220,37 +256,31 @@ def save_job_description(app_id: str, data: JobDescriptionData):
     return {"message": "Job Description saved successfully."}
 
 @app.post("/applications/{app_id}/generate-resume", response_model=Dict[str, Any])
-def generate_resume(app_id: str):
+def generate_resume(app_id: str, request: GenerateResumeRequest):
     app_path = os.path.join(APPLICATIONS_DIR, app_id)
     jd_path = os.path.join(app_path, "job_description.html")
     if not os.path.exists(jd_path): raise HTTPException(status_code=404, detail="Job description not found.")
 
-    # Load the fixed base resume
     with open(BASE_RESUME_PATH, 'r', encoding='utf-8') as f:
         fixed_resume_yaml = f.read()
         fixed_resume_data = yaml.safe_load(fixed_resume_yaml)
 
-    # Get job description text
     with open(jd_path, 'r', encoding='utf-8') as f:
         soup = BeautifulSoup(f.read(), 'html.parser')
         jd_text = soup.get_text(separator='\n', strip=True)
 
-    # Call the LLM to get the generated content
-    generated_content_str = agent_resume_tailor(jd_text, fixed_resume_yaml)
+    generated_content_str = agent_resume_tailor(jd_text, fixed_resume_yaml, request.modelProvider)
     
     try:
-        # The LLM returns a JSON string, which can be parsed by yaml.safe_load
         generated_data = yaml.safe_load(generated_content_str)
     except yaml.YAMLError as e:
         print(f"Error parsing LLM response: {e}")
         print(f"LLM Response:\n{generated_content_str}")
         raise HTTPException(status_code=500, detail="Failed to parse LLM-generated resume content.")
 
-    # Merge fixed data with generated data
     final_resume_data = merge_resume_data(fixed_resume_data, generated_data)
     final_resume_yaml = yaml.dump(final_resume_data, sort_keys=False, allow_unicode=True)
 
-    # Versioning and saving the final resume
     resume_versions = get_resume_versions(app_path)
     version_numbers = [int(re.search(r'_v(\d+)\.yaml$', f).group(1)) for f in resume_versions if re.search(r'_v(\d+)\.yaml$', f)]
     new_version_num = max(version_numbers) + 1 if version_numbers else 1
@@ -323,14 +353,95 @@ def finalize_resume(app_id: str, request: FinalizeRequest):
     except yaml.YAMLError:
         raise HTTPException(status_code=400, detail="Invalid YAML format in resume data.")
 
+    # Save the finalized YAML
+    final_yaml_path = os.path.join(app_path, "finalized_resume.yaml")
+    with open(final_yaml_path, 'w', encoding='utf-8') as f:
+        f.write(request.resumeYaml)
+
+    # Generate the final PDF
     pdf_generator = ATSResumePDFGenerator(variables=request.variables)
-    
     safe_name = "".join(c if c.isalnum() else '_' for c in resume_data['name'])
     final_pdf_name = f"Resume_{safe_name}.pdf"
     final_pdf_path = os.path.join(app_path, final_pdf_name)
 
     try:
         pdf_generator.generate_pdf_from_data(resume_data, final_pdf_path)
+        # Update app_details with the name for easier retrieval later
+        update_app_details(app_path, {"name": safe_name})
         return {"message": f"Successfully finalized resume as {final_pdf_name}"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate final PDF: {str(e)}")
+
+@app.get("/applications/{app_id}/finalized-pdf")
+def get_finalized_pdf(app_id: str):
+    app_path = os.path.join(APPLICATIONS_DIR, app_id)
+    if not os.path.isdir(app_path):
+        raise HTTPException(status_code=404, detail="Application not found.")
+    
+    details_path = os.path.join(app_path, "app_details.json")
+    if not os.path.exists(details_path):
+        raise HTTPException(status_code=404, detail="Application details not found.")
+        
+    with open(details_path, 'r') as f:
+        details = json.load(f)
+    
+    safe_name = details.get("name")
+    if not safe_name:
+        raise HTTPException(status_code=404, detail="Finalized resume name not found in details.")
+
+    pdf_filename = f"Resume_{safe_name}.pdf"
+    pdf_path = os.path.join(app_path, pdf_filename)
+
+    if not os.path.exists(pdf_path):
+        raise HTTPException(status_code=404, detail="Finalized PDF not found.")
+        
+    return FileResponse(pdf_path, media_type='application/pdf', filename=pdf_filename)
+
+@app.post("/applications/{app_id}/generate-email", response_model=Dict[str, str])
+def generate_email(app_id: str, request: EmailGenerationRequest):
+    app_path = os.path.join(APPLICATIONS_DIR, app_id)
+    if not os.path.isdir(app_path):
+        raise HTTPException(status_code=404, detail="Application not found.")
+
+    # Save the provided email details to app_details.json
+    update_app_details(app_path, request.dict(exclude={'modelProvider'}))
+
+    # Load required content
+    details_path = os.path.join(app_path, "app_details.json")
+    jd_path = os.path.join(app_path, "job_description.html")
+    resume_path = os.path.join(app_path, "finalized_resume.yaml")
+
+    if not os.path.exists(details_path):
+        raise HTTPException(status_code=404, detail="Application details not found.")
+    if not os.path.exists(jd_path):
+        raise HTTPException(status_code=404, detail="Job description not found. Please save it first.")
+    if not os.path.exists(resume_path):
+        raise HTTPException(status_code=404, detail="Finalized resume not found. Please finalize a resume version first.")
+
+    with open(details_path, 'r') as f:
+        app_details = json.load(f)
+    
+    with open(jd_path, 'r', encoding='utf-8') as f:
+        soup = BeautifulSoup(f.read(), 'html.parser')
+        jd_text = soup.get_text(separator='\n', strip=True)
+
+    with open(resume_path, 'r', encoding='utf-8') as f:
+        resume_yaml = f.read()
+
+    # Call the LLM agent with all necessary context
+    try:
+        email_content_str = agent_cold_email_generator(
+            company_name=app_details.get("companyName", ""),
+            role_title=app_details.get("roleTitle", ""),
+            recruiter_name=request.recruiterName,
+            recipient_linkedin_url=request.recruiterLinkedIn,
+            resume_yaml=resume_yaml,
+            jd_text=jd_text,
+            additional_details=request.additionalDetails,
+            model_provider=request.modelProvider
+        )
+        email_content = json.loads(email_content_str)
+        return email_content
+    except Exception as e:
+        print(f"Error during email generation: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate email content: {e}")
