@@ -10,6 +10,11 @@ from typing import Dict, Any, List, Optional
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 
+# Import reportlab components needed for width calculation
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate
+from reportlab.lib.units import inch
+
 # Import modularized functions and classes
 from utils import get_app_id, APPLICATIONS_DIR, BASE_RESUME_PATH, load_variables, merge_variables
 from llm_services import agent_resume_tailor, agent_cold_email_generator
@@ -22,7 +27,7 @@ load_dotenv()
 app = FastAPI(
     title="ApplySmart Backend",
     description="Manages job applications, renders PDFs, and generates cold emails.",
-    version="16.0.0" # Version bump for multi-model support
+    version="17.0.0" # Version bump for data preprocessing
 )
 
 # --- CORS Middleware ---
@@ -334,10 +339,22 @@ def render_pdf(app_id: str, data: RenderRequestData):
     if data.variables:
         final_vars = merge_variables(final_vars, data.variables)
 
-    pdf_path = os.path.join(app_path, "tailored_resume_preview.pdf")
+    # Instantiate the generator
     pdf_generator = ATSResumePDFGenerator(variables=final_vars)
-    pdf_generator.generate_pdf_from_data(resume_data, pdf_path)
     
+    # Create a dummy doc to get the width for preprocessing
+    dummy_doc = SimpleDocTemplate(os.path.join(app_path, "dummy.pdf"), pagesize=letter, rightMargin=0.4*inch, leftMargin=0.4*inch, topMargin=0.4*inch, bottomMargin=0.4*inch)
+
+    # Preprocess the data to trim skills that would wrap
+    trimmed_resume_data = pdf_generator.preprocess_data_for_fitting(resume_data, dummy_doc.width)
+
+    pdf_path = os.path.join(app_path, "tailored_resume_preview.pdf")
+    # Generate the PDF using the trimmed data
+    pdf_generator.generate_pdf_from_data(trimmed_resume_data, pdf_path)
+    
+    if os.path.exists(os.path.join(app_path, "dummy.pdf")):
+        os.remove(os.path.join(app_path, "dummy.pdf"))
+
     return FileResponse(pdf_path, media_type='application/pdf', filename=f"{app_id}_resume_preview.pdf")
 
 @app.post("/applications/{app_id}/finalize", response_model=Dict[str, str])
@@ -353,23 +370,35 @@ def finalize_resume(app_id: str, request: FinalizeRequest):
     except yaml.YAMLError:
         raise HTTPException(status_code=400, detail="Invalid YAML format in resume data.")
 
-    # Save the finalized YAML
+    # Instantiate the generator with the final variables
+    pdf_generator = ATSResumePDFGenerator(variables=request.variables)
+    
+    # Create a dummy doc to get the width for preprocessing
+    dummy_doc = SimpleDocTemplate(os.path.join(app_path, "dummy.pdf"), pagesize=letter, rightMargin=0.4*inch, leftMargin=0.4*inch, topMargin=0.4*inch, bottomMargin=0.4*inch)
+
+    # Preprocess the data to trim skills that would wrap
+    trimmed_resume_data = pdf_generator.preprocess_data_for_fitting(resume_data, dummy_doc.width)
+
+    # Save the FINAL, TRIMMED YAML
     final_yaml_path = os.path.join(app_path, "finalized_resume.yaml")
     with open(final_yaml_path, 'w', encoding='utf-8') as f:
-        f.write(request.resumeYaml)
+        yaml.dump(trimmed_resume_data, f, sort_keys=False, allow_unicode=True)
 
-    # Generate the final PDF
-    pdf_generator = ATSResumePDFGenerator(variables=request.variables)
+    # Generate the final PDF using the trimmed data
     safe_name = "".join(c if c.isalnum() else '_' for c in resume_data['name'])
     final_pdf_name = f"Resume_{safe_name}.pdf"
     final_pdf_path = os.path.join(app_path, final_pdf_name)
 
     try:
-        pdf_generator.generate_pdf_from_data(resume_data, final_pdf_path)
+        pdf_generator.generate_pdf_from_data(trimmed_resume_data, final_pdf_path)
         # Update app_details with the name for easier retrieval later
         update_app_details(app_path, {"name": safe_name})
+        if os.path.exists(os.path.join(app_path, "dummy.pdf")):
+            os.remove(os.path.join(app_path, "dummy.pdf"))
         return {"message": f"Successfully finalized resume as {final_pdf_name}"}
     except Exception as e:
+        if os.path.exists(os.path.join(app_path, "dummy.pdf")):
+            os.remove(os.path.join(app_path, "dummy.pdf"))
         raise HTTPException(status_code=500, detail=f"Failed to generate final PDF: {str(e)}")
 
 @app.get("/applications/{app_id}/finalized-pdf")

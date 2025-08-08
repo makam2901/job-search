@@ -50,6 +50,9 @@
              background-color: white;
              outline: none;
         }
+        /* Favorite Company Tile */
+        .company-tile { transition: box-shadow 0.2s ease-in-out; }
+        .company-tile:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800 overflow-hidden">
@@ -93,6 +96,7 @@
                 <nav class="-mb-px flex space-x-6 px-4" aria-label="Tabs">
                     <button data-tab="applications" class="tab-button active shrink-0 border-b-2 font-medium px-1 py-4 text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">Applications</button>
                     <button data-tab="email" class="tab-button shrink-0 border-b-2 font-medium px-1 py-4 text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">Email</button>
+                    <button data-tab="favorites" class="tab-button shrink-0 border-b-2 font-medium px-1 py-4 text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">Favorites</button>
                     <button data-tab="tracker" class="tab-button shrink-0 border-b-2 font-medium px-1 py-4 text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">Tracker</button>
                     <button data-tab="dashboard" class="tab-button shrink-0 border-b-2 font-medium px-1 py-4 text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">Dashboard</button>
                 </nav>
@@ -233,6 +237,23 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+            
+            <!-- Favorites Tab Content -->
+            <div id="favoritesContent" class="tab-content h-full overflow-y-auto p-8">
+                <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+                    <h3 class="text-2xl font-semibold mb-4">Add a Favorite Company</h3>
+                    <form id="favoritesForm" class="flex items-end gap-4">
+                        <div class="flex-grow">
+                            <label for="favoriteCompanyInput" class="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+                            <input type="text" id="favoriteCompanyInput" required class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., Google">
+                        </div>
+                        <button type="submit" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 h-10">Add Favorite</button>
+                    </form>
+                </div>
+                <div id="favoritesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <!-- Favorite company tiles will be inserted here -->
                 </div>
             </div>
 
@@ -429,7 +450,7 @@
     <script>
         // --- Combined Application Script ---
 
-        // --- Part 1: Tracker and Dashboard Logic ---
+        // --- Part 1: Tracker, Favorites, and Dashboard Logic ---
 
         const STATUS_OPTIONS = ["To Apply", "Waiting", "Finding", "Asking", "Applied", "Missed", "Rejected", "Received", "Interviewing"];
         const STATUS_COLORS = {
@@ -444,7 +465,9 @@
             "Interviewing": { bg: "bg-teal-100", text: "text-teal-800" },
         };
         const TRACKER_STORAGE_KEY = 'jobTrackerData';
-        
+        const FAVORITES_STORAGE_KEY = 'favoriteCompaniesData';
+        const FAVORITES_STATUS_KEY = 'favoriteCompaniesStatus';
+
         // DOM Elements
         const tabButtons = document.querySelectorAll('.tab-button');
         const tabContents = document.querySelectorAll('.tab-content');
@@ -459,6 +482,11 @@
         const trackerLinkInput = document.getElementById('trackerLink');
         const trackerStatusLinkInput = document.getElementById('trackerStatusLink');
         const trackerTableBody = document.getElementById('trackerTableBody');
+
+        // Favorites
+        const favoritesForm = document.getElementById('favoritesForm');
+        const favoriteCompanyInput = document.getElementById('favoriteCompanyInput');
+        const favoritesGrid = document.getElementById('favoritesGrid');
 
         // Dashboard
         const kpiTotal = document.getElementById('kpiTotal');
@@ -482,12 +510,41 @@
             },
             delete: (id) => trackerDb.save(trackerDb.get().filter(item => item.id !== id)),
         };
+
+        const favoritesDb = {
+            get: () => JSON.parse(localStorage.getItem(FAVORITES_STORAGE_KEY)) || [],
+            save: (data) => localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(data)),
+            add: (newItem) => favoritesDb.save([newItem, ...favoritesDb.get()]),
+            delete: (id) => favoritesDb.save(favoritesDb.get().filter(item => item.id !== id)),
+            getStatus: () => JSON.parse(localStorage.getItem(FAVORITES_STATUS_KEY)) || { lastCheckedDate: '', checkedIds: [] },
+            saveStatus: (status) => localStorage.setItem(FAVORITES_STATUS_KEY, JSON.stringify(status)),
+        };
         
         // --- Core Logic ---
+        function refreshAllData() {
+            refreshTrackerUI();
+            refreshFavoritesUI();
+        }
+
         function refreshTrackerUI() {
             const applications = trackerDb.get();
             renderTrackerTable(applications);
             updateDashboard(applications);
+        }
+
+        function refreshFavoritesUI() {
+            handleDailyReset();
+            const companies = favoritesDb.get();
+            const status = favoritesDb.getStatus();
+            renderFavoritesGrid(companies, status.checkedIds);
+        }
+
+        function handleDailyReset() {
+            const today = new Date().toISOString().split('T')[0];
+            const status = favoritesDb.getStatus();
+            if (status.lastCheckedDate !== today) {
+                favoritesDb.saveStatus({ lastCheckedDate: today, checkedIds: [] });
+            }
         }
 
         function switchTab(tabName) {
@@ -517,6 +574,71 @@
             }
         }
         
+        // --- Favorites Logic ---
+        function renderFavoritesGrid(companies, checkedIds) {
+            favoritesGrid.innerHTML = '';
+            if (companies.length === 0) {
+                favoritesGrid.innerHTML = `<p class="text-gray-500 col-span-full text-center">No favorite companies added yet. Add one above to start tracking!</p>`;
+                return;
+            }
+            companies.forEach(company => {
+                const isChecked = checkedIds.includes(company.id);
+                const tile = document.createElement('div');
+                tile.className = `company-tile bg-white p-4 rounded-lg shadow flex items-center justify-between ${isChecked ? 'bg-green-50' : ''}`;
+                tile.innerHTML = `
+                    <div class="flex items-center">
+                        <input type="checkbox" data-id="${company.id}" class="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500" ${isChecked ? 'checked' : ''}>
+                        <span class="ml-3 font-semibold text-gray-800">${company.name}</span>
+                    </div>
+                    <button data-id="${company.id}" class="delete-favorite-btn text-gray-400 hover:text-red-600 p-1 rounded-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                `;
+                favoritesGrid.appendChild(tile);
+            });
+        }
+
+        favoritesForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const companyName = favoriteCompanyInput.value.trim();
+            if (!companyName) return;
+            const newCompany = {
+                id: `fav_${Date.now()}`,
+                name: companyName,
+            };
+            favoritesDb.add(newCompany);
+            favoriteCompanyInput.value = '';
+            refreshFavoritesUI();
+        });
+
+        favoritesGrid.addEventListener('change', (e) => {
+            if (e.target.type === 'checkbox') {
+                const companyId = e.target.dataset.id;
+                const status = favoritesDb.getStatus();
+                if (e.target.checked) {
+                    if (!status.checkedIds.includes(companyId)) {
+                        status.checkedIds.push(companyId);
+                    }
+                } else {
+                    status.checkedIds = status.checkedIds.filter(id => id !== companyId);
+                }
+                favoritesDb.saveStatus(status);
+                refreshFavoritesUI(); // Re-render to apply styling
+            }
+        });
+
+        favoritesGrid.addEventListener('click', (e) => {
+            const deleteBtn = e.target.closest('.delete-favorite-btn');
+            if (deleteBtn) {
+                const companyId = deleteBtn.dataset.id;
+                if (confirm("Are you sure you want to remove this company from your favorites?")) {
+                    favoritesDb.delete(companyId);
+                    refreshFavoritesUI();
+                }
+            }
+        });
+
+
         // --- Tracker Table Logic ---
         function populateStatusDropdown(selectElement) {
             selectElement.innerHTML = '';
@@ -608,6 +730,12 @@
                         'rgba(249, 115, 22, 0.6)', // orange
                         'rgba(239, 68, 68, 0.6)'    // red
                     ],
+                    borderColor: [
+                        'rgba(34, 197, 94, 1)',
+                        'rgba(249, 115, 22, 1)',
+                        'rgba(239, 68, 68, 1)'
+                    ],
+                    borderWidth: 1
                 }]
             };
 
@@ -1393,7 +1521,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             initializeApp();
             switchTab('applications');
-            refreshTrackerUI();
+            refreshAllData();
         });
 
     </script>
