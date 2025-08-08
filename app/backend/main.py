@@ -34,6 +34,12 @@ app = FastAPI(
 origins = ["http://localhost:8080", "http://localhost"]
 app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
+class EmailDetails(BaseModel):
+    to: str
+    from_: str
+    subject: str
+    body: str
+
 # --- Pydantic Models ---
 class ApplicationData(BaseModel):
     companyName: str
@@ -123,6 +129,27 @@ def update_app_details(app_path: str, new_details: Dict):
 
 
 # --- API Endpoints ---
+
+# Save email details as YAML
+@app.post("/applications/{app_id}/save-email-details")
+async def save_email_details(app_id: str, details: EmailDetails):
+    app_folder = os.path.join(APPLICATIONS_DIR, app_id)
+    os.makedirs(app_folder, exist_ok=True)
+    yaml_path = os.path.join(app_folder, "email_details.yaml")
+    data = {"to": details.to, "from": details.from_, "subject": details.subject, "body": details.body}
+    with open(yaml_path, "w") as f:
+        yaml.dump(data, f)
+    return {"message": "Email details saved successfully."}
+
+# Fetch email details from YAML
+@app.get("/applications/{app_id}/email-details")
+async def get_email_details(app_id: str):
+    yaml_path = os.path.join(APPLICATIONS_DIR, app_id, "email_details.yaml")
+    if not os.path.exists(yaml_path):
+        raise HTTPException(status_code=404, detail="Email details not found.")
+    with open(yaml_path, "r") as f:
+        data = yaml.safe_load(f)
+    return data
 @app.on_event("startup")
 def on_startup():
     if not os.path.exists(APPLICATIONS_DIR): os.makedirs(APPLICATIONS_DIR)
