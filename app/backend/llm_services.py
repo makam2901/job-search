@@ -77,7 +77,7 @@ def call_openrouter_api(prompt: str, is_json_output: bool = False) -> str:
         response_format = {"type": "json_object"} if is_json_output else {"type": "text"}
 
         response = client.chat.completions.create(
-            model="openai/gpt-3.5-turbo", # You can change this to other models supported by OpenRouter
+            model="openai/gpt-oss-20b:free", # You can change this to other models supported by OpenRouter
             messages=messages,
             response_format=response_format
         )
@@ -123,7 +123,9 @@ Generate a JSON structure containing ONLY the following keys: `summary`, `skills
     - Write a powerful, 1-line professional summary (max 20 words, make the entire line is 140 characters strictly.) that perfectly mirrors the top requirements of the job description, optimized for ATS keyword matching. My experience is 3 years.
 
 2.  **`skills_reordered`**:
-    - Reorder the skill category blocks from the fixed information based on their relevance to the job description. Do NOT change the content within each category.
+    - Reorder the skill category blocks from the fixed information based on their relevance to the job description.
+    - **Crucially, identify skills mentioned in the job description that are missing from the candidate's list but are relevant to the job profile.**
+    - **Insert these new, relevant skills into the most appropriate existing categories.** Do NOT create new categories. For example, if the JD mentions 'Hive' and the candidate has a 'Tools' category, add 'Hive' to that list.
 
 3.  **`experience_bullets`**:
     - All the content should heavily be dependent on the job description.

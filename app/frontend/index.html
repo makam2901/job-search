@@ -1225,19 +1225,36 @@
             }
         });
         
-        saveContentConfigBtn.addEventListener('click', async () => {
-            if (!currentAppId) return;
-            const variablesToSave = mergeVariables(globalDefaultVars, appSpecificVars);
-            const contentConfig = getContentSelectionConfig();
-            variablesToSave.content_selection = contentConfig;
+        async function saveConfiguration(appId, message) {
+            if (!appId) return;
+
+            // Get the current state of the formatting form
+            const variablesToSave = getVariablesFromForm();
             
-            try {
-                await apiCall(`/applications/${currentAppId}/save-variables`, 'POST', { variables: variablesToSave });
-                appSpecificVars = variablesToSave;
-                alert('Content selection saved successfully for this application!');
-            } catch (error) {
-                alert('Failed to save content selection.');
+            // Get the current content selection config
+            const contentConfig = getContentSelectionConfig();
+            if (Object.keys(contentConfig).length > 0) {
+                 variablesToSave.content_selection = contentConfig;
             }
+
+            try {
+                await apiCall(`/applications/${appId}/save-variables`, 'POST', { variables: variablesToSave });
+                // Update the local state of app-specific variables
+                appSpecificVars = variablesToSave;
+                alert(message);
+            } catch (error) {
+                // apiCall already shows an alert, so no need to show another one here.
+            }
+        }
+
+        // FIX: Replaced original listener with a call to the new saveConfiguration function
+        saveContentConfigBtn.addEventListener('click', () => {
+             saveConfiguration(currentAppId, 'Content selection saved successfully!');
+        });
+
+        // FIX: Added event listener for the main configuration save button
+        saveConfigBtn.addEventListener('click', () => {
+            saveConfiguration(currentAppId, 'Configuration saved successfully for this application!');
         });
         
         configFileUpload.addEventListener('change', (event) => {
