@@ -110,7 +110,7 @@ You are an expert ATS resume writer and career coach. Your task is to transform 
 {jd_text}
 ---
 
-**Candidate's Fixed Information & Context (Use the 'context' field as a creative seed, you can go out of context as well):**
+**Candidate's Fixed Information & Context (Use the 'context' field as a creative seed):**
 ```yaml
 {fixed_resume_yaml}
 ```
@@ -129,7 +129,7 @@ Generate a JSON structure containing ONLY the following keys: `summary`, `skills
     - **Insert these new, relevant skills into the most appropriate existing categories**, maintaining the relevance-based order. Do NOT create new categories.
 
 3.  **`experience_bullets`**:
-    - All the content should heavily be dependent on the job description. You have full freedom to go out of the context as well as long as it is job description tailored.
+    - All the content should heavily be dependent on the job description.
     - Incoorporate the industry if mentioned in the job description. Ex: if finance is mentioned, invent saying financial data or financial reports.
     - This is your most critical task. You must generate bullet points using the **Problem-Action-Result (PAR)** framework. do it for majority of the bullet points. Just optimise for ATS.
     - For majority bullets, you must first articulate the business **problem** or **challenge**, then the **action** taken, and finally the **quantifiable result**.
@@ -144,7 +144,7 @@ Generate a JSON structure containing ONLY the following keys: `summary`, `skills
 
 4.  **`projects_reordered`**:
     - Reorder projects based on job relevance.
-    - All the content should heavily be dependent on the job description. You can go out of context as long as it is job description tailored.
+    - All the content should heavily be dependent on the job description.
     - Incoorporate the industry if mentioned in the job description. Ex: if finance is mentioned, invent saying financial data or financial reports.
     - This is your most critical task. You must generate bullet points using the **Problem-Action-Result (PAR)** framework. do it for majority of the bullet points. Just optimise for ATS.
     - For majority bullets, you must first articulate the business **problem** or **challenge**, then the **action** taken, and finally the **quantifiable result**.
@@ -153,7 +153,6 @@ Generate a JSON structure containing ONLY the following keys: `summary`, `skills
     - Word Count: make the entire line is 140 characters. strict.
     - **Strategic Bolding**: Identify the most critical parts of each bullet points based on the bullet itself and the job description. Wrap these keywords in `<b>...</b>` tags. Use this sparingly—aim for 1-3 bolded phrases per bullet to maximize impact without cluttering the text.
     - Include the original `title` and `dates` for each project.
-
 
 **Output Format & Example:**
 Your entire output MUST be a single, valid JSON string without any other text, explanations, or markdown. It must follow this exact structure:

@@ -295,7 +295,7 @@
                                 </div>
                                 <button id="generateEmailBtn" class="w-full bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 flex items-center justify-center app-button">
                                     <svg id="emailSpinner" class="spinner -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                                    Generate Email
+                                    Generate & Save Email
                                 </button>
                                 <p id="emailGenStatus" class="text-sm text-gray-600 mt-2 text-center"></p>
                             </div>
@@ -966,7 +966,6 @@
             contentSelectionForm.innerHTML = '';
             if (!resumeData) return;
 
-            // FIX: Add back email and location dropdowns
             const contactDiv = document.createElement('div');
             contactDiv.className = 'grid grid-cols-1 md:grid-cols-2 gap-4 mb-4';
             contactDiv.innerHTML = `
@@ -1027,7 +1026,6 @@
             const originalData = jsyaml.load(currentResumeYaml);
             const filteredData = JSON.parse(JSON.stringify(originalData)); 
             
-            // FIX: Read from the new dropdowns
             const emailSelect = contentSelectionForm.querySelector('#contact-email');
             const locationSelect = contentSelectionForm.querySelector('#contact-location');
             if (emailSelect && locationSelect && filteredData.contact) {
@@ -1099,8 +1097,14 @@
             debouncedRender();
         }
 
-        function updateVersionSelector(versions, selectedVersion) {
+        function updateVersionSelector(versions, selectedVersion, hasFinalized) {
             resumeVersionSelect.innerHTML = '';
+            if (hasFinalized) {
+                const option = document.createElement('option');
+                option.value = 'finalized';
+                option.textContent = 'Finalized Version 🏆';
+                resumeVersionSelect.appendChild(option);
+            }
             if (versions && versions.length > 0) {
                 versions.forEach(versionFile => {
                     const option = document.createElement('option');
@@ -1108,11 +1112,11 @@
                     option.textContent = versionFile.replace('tailored_resume_', '').replace('.yaml', '');
                     resumeVersionSelect.appendChild(option);
                 });
-                resumeVersionSelect.value = selectedVersion;
                 versionSelectorContainer.classList.remove('hidden');
-            } else {
-                versionSelectorContainer.classList.add('hidden');
+            } else if (!hasFinalized) {
+                 versionSelectorContainer.classList.add('hidden');
             }
+            resumeVersionSelect.value = selectedVersion;
         }
 
         function handleAppSelection(appId) {
@@ -1150,13 +1154,28 @@
                 appSpecificVars = details.customVariables || {};
                 jobDescriptionEditor.innerHTML = details.jobDescription || '';
                 generateResumeBtn.disabled = !details.jobDescription;
+                
                 const versions = details.resumeVersions || [];
-                const latestVersion = versions.length > 0 ? versions[0] : null;
+                const hasFinalized = !!details.finalizedResumeYaml;
+                
+                let versionToLoad;
+                let yamlToLoad;
+
+                if (hasFinalized) {
+                    versionToLoad = 'finalized';
+                    yamlToLoad = details.finalizedResumeYaml;
+                } else {
+                    versionToLoad = versions.length > 0 ? versions[0] : null;
+                    yamlToLoad = details.resumeYaml;
+                }
+
+                updateVersionSelector(versions, versionToLoad, hasFinalized);
+                
                 const finalVars = mergeVariables(defaultVars, details.customVariables || {});
                 baseFontNameSelect.value = finalVars.font_settings?.base_font_name || 'Helvetica';
                 populateFormattingForm(finalVars, '', formattingForm);
-                updateVersionSelector(versions, latestVersion);
-                updateUIWithNewResume(details.resumeYaml);
+                updateUIWithNewResume(yamlToLoad);
+
             } catch (error) {
                 console.error(`Could not load data for ${appId}`, error);
             }
@@ -1196,6 +1215,13 @@
                     recruiterLinkedInInput.value = details.emailDetails.recruiterLinkedIn || '';
                     additionalDetailsInput.value = details.emailDetails.additionalDetails || '';
                     emailToInput.value = details.emailDetails.recruiterEmail || '';
+                    
+                    emailSubjectInput.value = details.emailDetails.generatedEmailSubject || '';
+                    emailBodyInput.value = (details.emailDetails.generatedEmailBody || '').replace(/\\n/g, '\n');
+
+                    if(emailBodyInput.value) {
+                        sendEmailBtn.disabled = false;
+                    }
                 }
                 if (details.finalizedPdfUrl) {
                     downloadResumeBtn.disabled = false;
@@ -1314,8 +1340,16 @@
         resumeVersionSelect.addEventListener('change', async (e) => {
             const selectedFilename = e.target.value;
             if (!currentAppId || !selectedFilename) return;
-            const data = await apiCall(`/applications/${currentAppId}/resume-content?filename=${selectedFilename}`);
-            updateUIWithNewResume(data.resumeYaml);
+
+            if (selectedFilename === 'finalized') {
+                 const details = await apiCall(`/applications/${currentAppId}`);
+                 if(details.finalizedResumeYaml) {
+                    updateUIWithNewResume(details.finalizedResumeYaml);
+                 }
+            } else {
+                const data = await apiCall(`/applications/${currentAppId}/resume-content?filename=${selectedFilename}`);
+                updateUIWithNewResume(data.resumeYaml);
+            }
         });
         
         generateResumeBtn.addEventListener('click', async () => {
@@ -1326,7 +1360,11 @@
             try {
                 const modelProvider = resumeModelProviderSelect.value;
                 const result = await apiCall(`/applications/${currentAppId}/generate-resume`, 'POST', { modelProvider });
-                updateVersionSelector(result.resumeVersions, result.filename);
+                
+                const details = await apiCall(`/applications/${currentAppId}`);
+                const hasFinalized = !!details.finalizedResumeYaml;
+
+                updateVersionSelector(result.resumeVersions, result.filename, hasFinalized);
                 updateUIWithNewResume(result.resumeYaml);
                 yamlStatus.textContent = `✅ ${result.message}`;
             } catch (error) {
@@ -1348,6 +1386,7 @@
                     variables: variables
                 });
                 alert(response.message);
+                selectApplicationForResume(currentAppId);
             } finally {
                 finalizeBtn.disabled = false;
             }
@@ -1356,10 +1395,8 @@
         async function saveConfiguration(appId, message) {
             if (!appId) return;
 
-            // Get the current state of the formatting form
             const variablesToSave = getVariablesFromForm();
             
-            // Get the current content selection config
             const contentConfig = getContentSelectionConfig();
             if (Object.keys(contentConfig).length > 0) {
                  variablesToSave.content_selection = contentConfig;
@@ -1367,20 +1404,16 @@
 
             try {
                 await apiCall(`/applications/${appId}/save-variables`, 'POST', { variables: variablesToSave });
-                // Update the local state of app-specific variables
                 appSpecificVars = variablesToSave;
                 alert(message);
             } catch (error) {
-                // apiCall already shows an alert, so no need to show another one here.
             }
         }
 
-        // FIX: Replaced original listener with a call to the new saveConfiguration function
         saveContentConfigBtn.addEventListener('click', () => {
              saveConfiguration(currentAppId, 'Content selection saved successfully!');
         });
 
-        // FIX: Added event listener for the main configuration save button
         saveConfigBtn.addEventListener('click', () => {
             saveConfiguration(currentAppId, 'Configuration saved successfully for this application!');
         });
@@ -1438,7 +1471,7 @@
                 emailToInput.value = details.recruiterEmail;
                 emailSubjectInput.value = response.subject;
                 emailBodyInput.value = response.body.replace(/\\n/g, '\n');
-                emailGenStatus.textContent = '✅ Email generated successfully!';
+                emailGenStatus.textContent = '✅ Email generated & saved successfully!';
                 sendEmailBtn.disabled = false;
             } catch (error) {
                 emailGenStatus.textContent = `❌ Error: ${error.message}`;
@@ -1451,23 +1484,19 @@
         sendEmailBtn.addEventListener('click', async () => {
             if (!currentAppId) return;
 
-            // 1. Get current application details from the server
             const appDetails = await apiCall(`/applications/${currentAppId}`);
             if (!appDetails) {
                 alert("Could not retrieve application details to update tracker.");
                 return;
             }
 
-            // 2. Check if the application exists in the tracker
             const trackerData = trackerDb.get();
             let existingEntry = trackerData.find(app => app.company === appDetails.companyName && app.role === appDetails.roleTitle);
 
             if (existingEntry) {
-                // 3a. Update existing entry
                 trackerDb.update(existingEntry.id, 'status', 'Applied');
                 trackerDb.update(existingEntry.id, 'contact', recruiterEmailInput.value.trim());
             } else {
-                // 3b. Create new entry
                 const newTrackerEntry = {
                     id: `app_${Date.now()}`,
                     company: appDetails.companyName,
@@ -1482,11 +1511,9 @@
                 trackerDb.add(newTrackerEntry);
             }
             
-            // 4. Refresh tracker UI
             refreshTrackerUI();
             alert("Application has been marked as 'Applied' in the tracker.");
 
-            // 5. Open mail client
             const to = encodeURIComponent(emailToInput.value);
             const subject = encodeURIComponent(emailSubjectInput.value);
             const body = encodeURIComponent(emailBodyInput.value);

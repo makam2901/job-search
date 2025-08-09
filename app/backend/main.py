@@ -27,18 +27,12 @@ load_dotenv()
 app = FastAPI(
     title="ApplySmart Backend",
     description="Manages job applications, renders PDFs, and generates cold emails.",
-    version="17.0.0" # Version bump for data preprocessing
+    version="17.3.0" # Version bump for finalized resume default
 )
 
 # --- CORS Middleware ---
 origins = ["http://localhost:8080", "http://localhost"]
 app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
-
-class EmailDetails(BaseModel):
-    to: str
-    from_: str
-    subject: str
-    body: str
 
 # --- Pydantic Models ---
 class ApplicationData(BaseModel):
@@ -63,6 +57,12 @@ class SaveVariablesRequest(BaseModel):
 class FinalizeRequest(BaseModel):
     resumeYaml: str
     variables: Dict[str, Any]
+
+class EmailDetails(BaseModel):
+    recruiterName: Optional[str] = ""
+    recruiterEmail: Optional[str] = ""
+    recruiterLinkedIn: Optional[str] = ""
+    additionalDetails: Optional[str] = ""
 
 class EmailGenerationRequest(BaseModel):
     recruiterName: Optional[str] = ""
@@ -122,34 +122,16 @@ def update_app_details(app_path: str, new_details: Dict):
     details = {}
     if os.path.exists(details_path):
         with open(details_path, 'r') as f:
-            details = json.load(f)
+            try:
+                details = json.load(f)
+            except json.JSONDecodeError:
+                details = {} # Start with empty dict if file is corrupt
     details.update(new_details)
     with open(details_path, 'w') as f:
         json.dump(details, f, indent=2)
 
 
 # --- API Endpoints ---
-
-# Save email details as YAML
-@app.post("/applications/{app_id}/save-email-details")
-async def save_email_details(app_id: str, details: EmailDetails):
-    app_folder = os.path.join(APPLICATIONS_DIR, app_id)
-    os.makedirs(app_folder, exist_ok=True)
-    yaml_path = os.path.join(app_folder, "email_details.yaml")
-    data = {"to": details.to, "from": details.from_, "subject": details.subject, "body": details.body}
-    with open(yaml_path, "w") as f:
-        yaml.dump(data, f)
-    return {"message": "Email details saved successfully."}
-
-# Fetch email details from YAML
-@app.get("/applications/{app_id}/email-details")
-async def get_email_details(app_id: str):
-    yaml_path = os.path.join(APPLICATIONS_DIR, app_id, "email_details.yaml")
-    if not os.path.exists(yaml_path):
-        raise HTTPException(status_code=404, detail="Email details not found.")
-    with open(yaml_path, "r") as f:
-        data = yaml.safe_load(f)
-    return data
 @app.on_event("startup")
 def on_startup():
     if not os.path.exists(APPLICATIONS_DIR): os.makedirs(APPLICATIONS_DIR)
@@ -235,6 +217,12 @@ def get_application_details(app_id: str):
     if yaml_path and os.path.exists(yaml_path):
         with open(yaml_path, 'r', encoding='utf-8') as f: yaml_content = f.read()
 
+    finalized_yaml_path = os.path.join(app_path, "finalized_resume.yaml")
+    finalized_yaml_content = ""
+    if os.path.exists(finalized_yaml_path):
+        with open(finalized_yaml_path, 'r', encoding='utf-8') as f:
+            finalized_yaml_content = f.read()
+
     custom_vars_path = os.path.join(app_path, "custom_variables.yaml")
     custom_vars = None
     if os.path.exists(custom_vars_path):
@@ -250,13 +238,16 @@ def get_application_details(app_id: str):
         "jobLink": details.get("jobLink"),
         "jobDescription": jd_content, 
         "resumeYaml": yaml_content, 
+        "finalizedResumeYaml": finalized_yaml_content,
         "customVariables": custom_vars, 
         "resumeVersions": resume_versions,
         "emailDetails": {
             "recruiterName": details.get("recruiterName", ""),
             "recruiterEmail": details.get("recruiterEmail", ""),
             "recruiterLinkedIn": details.get("recruiterLinkedIn", ""),
-            "additionalDetails": details.get("additionalDetails", "")
+            "additionalDetails": details.get("additionalDetails", ""),
+            "generatedEmailSubject": details.get("generatedEmailSubject", ""),
+            "generatedEmailBody": details.get("generatedEmailBody", "")
         },
         "finalizedPdfUrl": f"/applications/{app_id}/finalized-pdf" if os.path.exists(finalized_pdf_path) else None
     }
@@ -453,14 +444,21 @@ def get_finalized_pdf(app_id: str):
         
     return FileResponse(pdf_path, media_type='application/pdf', filename=pdf_filename)
 
+@app.post("/applications/{app_id}/save-email-details", response_model=Dict[str, str])
+def save_email_details(app_id: str, details: EmailDetails):
+    app_path = os.path.join(APPLICATIONS_DIR, app_id)
+    if not os.path.isdir(app_path):
+        raise HTTPException(status_code=404, detail="Application not found.")
+    
+    update_app_details(app_path, details.dict())
+    
+    return {"message": "Email details saved."}
+
 @app.post("/applications/{app_id}/generate-email", response_model=Dict[str, str])
 def generate_email(app_id: str, request: EmailGenerationRequest):
     app_path = os.path.join(APPLICATIONS_DIR, app_id)
     if not os.path.isdir(app_path):
         raise HTTPException(status_code=404, detail="Application not found.")
-
-    # Save the provided email details to app_details.json
-    update_app_details(app_path, request.dict(exclude={'modelProvider'}))
 
     # Load required content
     details_path = os.path.join(app_path, "app_details.json")
@@ -497,6 +495,15 @@ def generate_email(app_id: str, request: EmailGenerationRequest):
             model_provider=request.modelProvider
         )
         email_content = json.loads(email_content_str)
+        
+        # Combine recruiter info and generated content to save
+        details_to_save = request.dict(exclude={'modelProvider'})
+        details_to_save['generatedEmailSubject'] = email_content.get('subject')
+        details_to_save['generatedEmailBody'] = email_content.get('body')
+        
+        # Save everything to app_details.json in one go
+        update_app_details(app_path, details_to_save)
+
         return email_content
     except Exception as e:
         print(f"Error during email generation: {e}")
