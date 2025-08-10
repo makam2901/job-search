@@ -2,6 +2,8 @@ import os
 import yaml
 import re
 import json
+import uuid
+from datetime import datetime
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -27,12 +29,18 @@ load_dotenv()
 app = FastAPI(
     title="ApplySmart Backend",
     description="Manages job applications, renders PDFs, and generates cold emails.",
-    version="17.3.0" # Version bump for finalized resume default
+    version="18.2.0" # Version bump for duplicate handling
 )
 
 # --- CORS Middleware ---
 origins = ["http://localhost:8080", "http://localhost"]
 app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+
+
+# --- Constants for Tracker ---
+TRACKER_APPS_PATH = os.path.join(APPLICATIONS_DIR, "tracker_applications.json")
+TRACKER_EMAILS_PATH = os.path.join(APPLICATIONS_DIR, "tracker_emails.json")
+
 
 # --- Pydantic Models ---
 class ApplicationData(BaseModel):
@@ -71,6 +79,32 @@ class EmailGenerationRequest(BaseModel):
     additionalDetails: Optional[str] = ""
     modelProvider: str
 
+class TrackerApplicationItem(BaseModel):
+    id: str = Field(default_factory=lambda: f"app_{uuid.uuid4().hex}")
+    company: str
+    role: str
+    jobId: Optional[str] = ""
+    referral: bool = False
+    contact: Optional[str] = ""
+    status: str = "To Apply"
+    jobLink: Optional[str] = ""
+    statusLink: Optional[str] = ""
+    createdAt: str = Field(default_factory=lambda: datetime.now().isoformat())
+
+class TrackerEmailItem(BaseModel):
+    id: str = Field(default_factory=lambda: f"email_{uuid.uuid4().hex}")
+    company: str
+    role: str
+    jobId: Optional[str] = ""
+    recruiter: Optional[str] = ""
+    contact: Optional[str] = "" # Recruiter's email
+    status: str = "Sent"
+    jobLink: Optional[str] = ""
+    createdAt: str = Field(default_factory=lambda: datetime.now().isoformat())
+
+class TrackEmailRequest(BaseModel):
+    recruiterName: str
+    recruiterEmail: str
 
 # --- Helper Functions ---
 def get_resume_versions(app_path: str) -> List[str]:
@@ -129,6 +163,21 @@ def update_app_details(app_path: str, new_details: Dict):
     details.update(new_details)
     with open(details_path, 'w') as f:
         json.dump(details, f, indent=2)
+
+def read_tracker_data(path: str) -> List[Dict]:
+    """Reads tracker data from a JSON file."""
+    if not os.path.exists(path):
+        return []
+    with open(path, 'r') as f:
+        try:
+            return json.load(f)
+        except json.JSONDecodeError:
+            return []
+
+def write_tracker_data(path: str, data: List[Dict]):
+    """Writes tracker data to a JSON file."""
+    with open(path, 'w') as f:
+        json.dump(data, f, indent=2)
 
 
 # --- API Endpoints ---
@@ -293,7 +342,6 @@ def generate_resume(app_id: str, request: GenerateResumeRequest):
         jd_text = soup.get_text(separator='\n', strip=True)
 
     generated_content_str = agent_resume_tailor(jd_text, fixed_resume_yaml, request.modelProvider)
-    # print(generated_content_str)  # Debugging output to check LLM response
     
     try:
         generated_data = yaml.safe_load(generated_content_str)
@@ -358,17 +406,13 @@ def render_pdf(app_id: str, data: RenderRequestData):
     if data.variables:
         final_vars = merge_variables(final_vars, data.variables)
 
-    # Instantiate the generator
     pdf_generator = ATSResumePDFGenerator(variables=final_vars)
     
-    # Create a dummy doc to get the width for preprocessing
     dummy_doc = SimpleDocTemplate(os.path.join(app_path, "dummy.pdf"), pagesize=letter, rightMargin=0.4*inch, leftMargin=0.4*inch, topMargin=0.4*inch, bottomMargin=0.4*inch)
 
-    # Preprocess the data to trim skills that would wrap
     trimmed_resume_data = pdf_generator.preprocess_data_for_fitting(resume_data, dummy_doc.width)
 
     pdf_path = os.path.join(app_path, "tailored_resume_preview.pdf")
-    # Generate the PDF using the trimmed data
     pdf_generator.generate_pdf_from_data(trimmed_resume_data, pdf_path)
     
     if os.path.exists(os.path.join(app_path, "dummy.pdf")):
@@ -389,32 +433,25 @@ def finalize_resume(app_id: str, request: FinalizeRequest):
     except yaml.YAMLError:
         raise HTTPException(status_code=400, detail="Invalid YAML format in resume data.")
 
-    # Instantiate the generator with the final variables
     pdf_generator = ATSResumePDFGenerator(variables=request.variables)
-    
-    # Create a dummy doc to get the width for preprocessing
     dummy_doc = SimpleDocTemplate(os.path.join(app_path, "dummy.pdf"), pagesize=letter, rightMargin=0.4*inch, leftMargin=0.4*inch, topMargin=0.4*inch, bottomMargin=0.4*inch)
-
-    # Preprocess the data to trim skills that would wrap
     trimmed_resume_data = pdf_generator.preprocess_data_for_fitting(resume_data, dummy_doc.width)
 
-    # Save the FINAL, TRIMMED YAML
     final_yaml_path = os.path.join(app_path, "finalized_resume.yaml")
     with open(final_yaml_path, 'w', encoding='utf-8') as f:
         yaml.dump(trimmed_resume_data, f, sort_keys=False, allow_unicode=True)
 
-    # Generate the final PDF using the trimmed data
     safe_name = "".join(c if c.isalnum() else '_' for c in resume_data['name'])
     final_pdf_name = f"Resume_{safe_name}.pdf"
     final_pdf_path = os.path.join(app_path, final_pdf_name)
 
     try:
         pdf_generator.generate_pdf_from_data(trimmed_resume_data, final_pdf_path)
-        # Update app_details with the name for easier retrieval later
         update_app_details(app_path, {"name": safe_name})
         if os.path.exists(os.path.join(app_path, "dummy.pdf")):
             os.remove(os.path.join(app_path, "dummy.pdf"))
-        return {"message": f"Successfully finalized resume as {final_pdf_name}"}
+        
+        return {"message": f"Successfully finalized resume as {final_pdf_name}."}
     except Exception as e:
         if os.path.exists(os.path.join(app_path, "dummy.pdf")):
             os.remove(os.path.join(app_path, "dummy.pdf"))
@@ -461,29 +498,18 @@ def generate_email(app_id: str, request: EmailGenerationRequest):
     if not os.path.isdir(app_path):
         raise HTTPException(status_code=404, detail="Application not found.")
 
-    # Load required content
     details_path = os.path.join(app_path, "app_details.json")
     jd_path = os.path.join(app_path, "job_description.html")
     resume_path = os.path.join(app_path, "finalized_resume.yaml")
 
-    if not os.path.exists(details_path):
-        raise HTTPException(status_code=404, detail="Application details not found.")
-    if not os.path.exists(jd_path):
-        raise HTTPException(status_code=404, detail="Job description not found. Please save it first.")
-    if not os.path.exists(resume_path):
-        raise HTTPException(status_code=404, detail="Finalized resume not found. Please finalize a resume version first.")
+    if not os.path.exists(details_path): raise HTTPException(status_code=404, detail="Application details not found.")
+    if not os.path.exists(jd_path): raise HTTPException(status_code=404, detail="Job description not found.")
+    if not os.path.exists(resume_path): raise HTTPException(status_code=404, detail="Finalized resume not found.")
 
-    with open(details_path, 'r') as f:
-        app_details = json.load(f)
-    
-    with open(jd_path, 'r', encoding='utf-8') as f:
-        soup = BeautifulSoup(f.read(), 'html.parser')
-        jd_text = soup.get_text(separator='\n', strip=True)
+    with open(details_path, 'r') as f: app_details = json.load(f)
+    with open(jd_path, 'r', encoding='utf-8') as f: jd_text = BeautifulSoup(f.read(), 'html.parser').get_text(separator='\n', strip=True)
+    with open(resume_path, 'r', encoding='utf-8') as f: resume_yaml = f.read()
 
-    with open(resume_path, 'r', encoding='utf-8') as f:
-        resume_yaml = f.read()
-
-    # Call the LLM agent with all necessary context
     try:
         email_content_str = agent_cold_email_generator(
             company_name=app_details.get("companyName", ""),
@@ -497,15 +523,197 @@ def generate_email(app_id: str, request: EmailGenerationRequest):
         )
         email_content = json.loads(email_content_str)
         
-        # Combine recruiter info and generated content to save
         details_to_save = request.dict(exclude={'modelProvider'})
         details_to_save['generatedEmailSubject'] = email_content.get('subject')
         details_to_save['generatedEmailBody'] = email_content.get('body')
         
-        # Save everything to app_details.json in one go
         update_app_details(app_path, details_to_save)
-
         return email_content
     except Exception as e:
-        print(f"Error during email generation: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to generate email content: {e}")
+
+# --- Tracker Endpoints ---
+
+@app.post("/applications/{app_id}/track-application", response_model=TrackerApplicationItem)
+def track_application(app_id: str):
+    app_path = os.path.join(APPLICATIONS_DIR, app_id)
+    details_path = os.path.join(app_path, "app_details.json")
+    if not os.path.exists(details_path):
+        raise HTTPException(status_code=404, detail="Application details not found.")
+    
+    with open(details_path, 'r') as f:
+        details = json.load(f)
+    
+    apps = read_tracker_data(TRACKER_APPS_PATH)
+    
+    company = details.get("companyName", "")
+    role = details.get("roleTitle", "")
+    jobId = details.get("jobId", "")
+    jobLink = details.get("jobLink", "")
+
+    # Find existing item
+    existing_item_index = -1
+    if jobId and jobId.strip(): # Primary check: non-empty Job ID
+        existing_item_index = next((i for i, item in enumerate(apps) if item.get("jobId") == jobId), -1)
+    
+    if existing_item_index == -1: # Fallback check: company and role
+        existing_item_index = next((i for i, item in enumerate(apps) if item.get("company") == company and item.get("role") == role), -1)
+
+    if existing_item_index != -1:
+        # Update existing item
+        apps[existing_item_index]["jobLink"] = jobLink
+        apps[existing_item_index]["jobId"] = jobId # Ensure Job ID is updated if it was missing
+        write_tracker_data(TRACKER_APPS_PATH, apps)
+        return apps[existing_item_index]
+    else:
+        # Create new item
+        new_app_item = TrackerApplicationItem(
+            company=company,
+            role=role,
+            jobId=jobId,
+            jobLink=jobLink,
+            status="To Apply"
+        )
+        apps.insert(0, new_app_item.dict())
+        write_tracker_data(TRACKER_APPS_PATH, apps)
+        return new_app_item
+
+@app.get("/tracker/applications", response_model=List[TrackerApplicationItem])
+def get_tracker_applications():
+    return read_tracker_data(TRACKER_APPS_PATH)
+
+@app.post("/tracker/applications", response_model=TrackerApplicationItem)
+def add_tracker_application(item: TrackerApplicationItem):
+    apps = read_tracker_data(TRACKER_APPS_PATH)
+    
+    existing_item_index = -1
+    if item.jobId and item.jobId.strip():
+        existing_item_index = next((i for i, app in enumerate(apps) if app.get("jobId") == item.jobId), -1)
+        
+    if existing_item_index == -1:
+        existing_item_index = next((i for i, app in enumerate(apps) if app.get("company") == item.company and app.get("role") == item.role), -1)
+
+    if existing_item_index != -1:
+        # Update existing item
+        original_id = apps[existing_item_index]['id']
+        original_createdAt = apps[existing_item_index].get('createdAt')
+        
+        updated_data = apps[existing_item_index].copy()
+        updated_data.update(item.dict(exclude_unset=True))
+        
+        updated_data['id'] = original_id
+        if original_createdAt:
+            updated_data['createdAt'] = original_createdAt
+            
+        apps[existing_item_index] = updated_data
+        write_tracker_data(TRACKER_APPS_PATH, apps)
+        return updated_data
+    else:
+        # Add new item
+        apps.insert(0, item.dict())
+        write_tracker_data(TRACKER_APPS_PATH, apps)
+        return item
+
+@app.put("/tracker/applications/{item_id}", response_model=TrackerApplicationItem)
+def update_tracker_application(item_id: str, updated_item: TrackerApplicationItem):
+    apps = read_tracker_data(TRACKER_APPS_PATH)
+    index = next((i for i, app in enumerate(apps) if app["id"] == item_id), None)
+    if index is None:
+        raise HTTPException(status_code=404, detail="Application item not found")
+    
+    original_created_at = apps[index].get("createdAt", datetime.now().isoformat())
+    item_dict = updated_item.dict()
+    item_dict["createdAt"] = original_created_at
+    item_dict["id"] = item_id
+
+    apps[index] = item_dict
+    write_tracker_data(TRACKER_APPS_PATH, apps)
+    return apps[index]
+
+@app.delete("/tracker/applications/{item_id}", status_code=204)
+def delete_tracker_application(item_id: str):
+    apps = read_tracker_data(TRACKER_APPS_PATH)
+    initial_len = len(apps)
+    apps = [app for app in apps if app["id"] != item_id]
+    if len(apps) == initial_len:
+        raise HTTPException(status_code=404, detail="Application item not found")
+    write_tracker_data(TRACKER_APPS_PATH, apps)
+    return
+
+@app.get("/tracker/emails", response_model=List[TrackerEmailItem])
+def get_tracker_emails():
+    return read_tracker_data(TRACKER_EMAILS_PATH)
+
+@app.post("/applications/{app_id}/track-email", response_model=TrackerEmailItem)
+def track_email(app_id: str, request: TrackEmailRequest):
+    app_path = os.path.join(APPLICATIONS_DIR, app_id)
+    details_path = os.path.join(app_path, "app_details.json")
+    if not os.path.exists(details_path):
+        raise HTTPException(status_code=404, detail="Application details not found.")
+    
+    with open(details_path, 'r') as f:
+        details = json.load(f)
+
+    emails = read_tracker_data(TRACKER_EMAILS_PATH)
+    
+    company = details.get("companyName", "")
+    role = details.get("roleTitle", "")
+    jobId = details.get("jobId", "")
+    jobLink = details.get("jobLink", "")
+
+    existing_item_index = -1
+    if jobId and jobId.strip():
+        existing_item_index = next((i for i, item in enumerate(emails) if item.get("jobId") == jobId), -1)
+    
+    if existing_item_index == -1:
+        existing_item_index = next((i for i, item in enumerate(emails) if item.get("company") == company and item.get("role") == role), -1)
+
+    if existing_item_index != -1:
+        # Update existing item
+        emails[existing_item_index]["recruiter"] = request.recruiterName
+        emails[existing_item_index]["contact"] = request.recruiterEmail
+        emails[existing_item_index]["jobLink"] = jobLink
+        emails[existing_item_index]["jobId"] = jobId
+        emails[existing_item_index]["status"] = "Sent"
+        write_tracker_data(TRACKER_EMAILS_PATH, emails)
+        return emails[existing_item_index]
+    else:
+        # Create new item
+        new_email_item = TrackerEmailItem(
+            company=company,
+            role=role,
+            jobId=jobId,
+            recruiter=request.recruiterName,
+            contact=request.recruiterEmail,
+            status="Sent",
+            jobLink=jobLink
+        )
+        emails.insert(0, new_email_item.dict())
+        write_tracker_data(TRACKER_EMAILS_PATH, emails)
+        return new_email_item
+
+@app.put("/tracker/emails/{item_id}", response_model=TrackerEmailItem)
+def update_tracker_email(item_id: str, updated_item: TrackerEmailItem):
+    emails = read_tracker_data(TRACKER_EMAILS_PATH)
+    index = next((i for i, email in enumerate(emails) if email["id"] == item_id), None)
+    if index is None:
+        raise HTTPException(status_code=404, detail="Email item not found")
+    
+    original_created_at = emails[index].get("createdAt", datetime.now().isoformat())
+    item_dict = updated_item.dict()
+    item_dict["createdAt"] = original_created_at
+    item_dict["id"] = item_id
+
+    emails[index] = item_dict
+    write_tracker_data(TRACKER_EMAILS_PATH, emails)
+    return emails[index]
+
+@app.delete("/tracker/emails/{item_id}", status_code=204)
+def delete_tracker_email(item_id: str):
+    emails = read_tracker_data(TRACKER_EMAILS_PATH)
+    initial_len = len(emails)
+    emails = [email for email in emails if email["id"] != item_id]
+    if len(emails) == initial_len:
+        raise HTTPException(status_code=404, detail="Email item not found")
+    write_tracker_data(TRACKER_EMAILS_PATH, emails)
+    return
