@@ -29,7 +29,7 @@ load_dotenv()
 app = FastAPI(
     title="ApplySmart Backend",
     description="Manages job applications, renders PDFs, and generates cold emails.",
-    version="18.3.0" # Version bump for button fixes and finalize logic
+    version="18.4.0" # Version bump for robust finalization logic
 )
 
 # --- CORS Middleware ---
@@ -65,6 +65,7 @@ class SaveVariablesRequest(BaseModel):
 class FinalizeRequest(BaseModel):
     resumeYaml: str
     variables: Dict[str, Any]
+    baseVersionFile: str # The filename of the version being finalized
 
 class EmailDetails(BaseModel):
     recruiterName: Optional[str] = ""
@@ -249,22 +250,31 @@ def get_application_details(app_id: str):
     details_path = os.path.join(app_path, "app_details.json")
     jd_path = os.path.join(app_path, "job_description.html")
     
-    resume_versions = get_resume_versions(app_path)
-    latest_resume_file = resume_versions[0] if resume_versions else None
-    yaml_path = os.path.join(app_path, latest_resume_file) if latest_resume_file else None
-
     details = {}
     if os.path.exists(details_path):
         with open(details_path, 'r') as f:
             details = json.load(f)
 
-    jd_content = ""
-    if os.path.exists(jd_path):
-        with open(jd_path, 'r', encoding='utf-8') as f: jd_content = f.read()
+    resume_versions = get_resume_versions(app_path)
     
+    # **MODIFIED LOGIC**
+    # Determine which file to load as the main `resumeYaml` (the full version for comparison).
+    # If a version has been finalized, use the stored base version. Otherwise, use the latest generated version.
+    finalized_base_version = details.get("finalizedBaseVersion")
+    if finalized_base_version and os.path.exists(os.path.join(app_path, finalized_base_version)):
+        base_version_file = finalized_base_version
+    else:
+        base_version_file = resume_versions[0] if resume_versions else None
+
+    yaml_path = os.path.join(app_path, base_version_file) if base_version_file else None
+
     yaml_content = ""
     if yaml_path and os.path.exists(yaml_path):
         with open(yaml_path, 'r', encoding='utf-8') as f: yaml_content = f.read()
+
+    jd_content = ""
+    if os.path.exists(jd_path):
+        with open(jd_path, 'r', encoding='utf-8') as f: jd_content = f.read()
 
     finalized_yaml_path = os.path.join(app_path, "finalized_resume.yaml")
     finalized_yaml_content = ""
@@ -286,7 +296,7 @@ def get_application_details(app_id: str):
         "jobId": details.get("jobId"),
         "jobLink": details.get("jobLink"),
         "jobDescription": jd_content, 
-        "resumeYaml": yaml_content, 
+        "resumeYaml": yaml_content, # This is now correctly the full version for comparison
         "finalizedResumeYaml": finalized_yaml_content,
         "customVariables": custom_vars, 
         "resumeVersions": resume_versions,
@@ -427,20 +437,16 @@ def finalize_resume(app_id: str, request: FinalizeRequest):
         raise HTTPException(status_code=404, detail="Application not found.")
 
     try:
-        # This is the data filtered by the user's checkboxes
         resume_data = yaml.safe_load(request.resumeYaml)
         if 'name' not in resume_data:
             raise HTTPException(status_code=400, detail="Resume data must contain a 'name' field.")
     except yaml.YAMLError:
         raise HTTPException(status_code=400, detail="Invalid YAML format in resume data.")
 
-    # Save the user-selected data to finalized_resume.yaml FIRST.
-    # This represents the user's intent for UI comparison later.
     final_yaml_path = os.path.join(app_path, "finalized_resume.yaml")
     with open(final_yaml_path, 'w', encoding='utf-8') as f:
         yaml.dump(resume_data, f, sort_keys=False, allow_unicode=True)
 
-    # Now, prepare the data for the PDF, which might involve trimming long lines.
     pdf_generator = ATSResumePDFGenerator(variables=request.variables)
     dummy_doc = SimpleDocTemplate(os.path.join(app_path, "dummy.pdf"), pagesize=letter, rightMargin=0.4*inch, leftMargin=0.4*inch, topMargin=0.4*inch, bottomMargin=0.4*inch)
     trimmed_resume_data = pdf_generator.preprocess_data_for_fitting(resume_data, dummy_doc.width)
@@ -450,9 +456,12 @@ def finalize_resume(app_id: str, request: FinalizeRequest):
     final_pdf_path = os.path.join(app_path, final_pdf_name)
 
     try:
-        # Generate the PDF using the potentially trimmed data
         pdf_generator.generate_pdf_from_data(trimmed_resume_data, final_pdf_path)
-        update_app_details(app_path, {"name": safe_name})
+        # **MODIFIED:** Save the base version filename along with the safe name
+        update_app_details(app_path, {
+            "name": safe_name,
+            "finalizedBaseVersion": request.baseVersionFile
+        })
         
         if os.path.exists(os.path.join(app_path, "dummy.pdf")):
             os.remove(os.path.join(app_path, "dummy.pdf"))
