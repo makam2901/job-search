@@ -185,7 +185,7 @@
                                         </div>
                                         <form id="contentSelectionForm" class="mt-4 border-t pt-4 space-y-2 hidden"></form>
                                         <button id="saveContentConfigBtn" class="hidden mt-4 bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700 app-button">
-                                            Save Content Selection
+                                            Save Selected Content
                                         </button>
                                         <div id="contentSelectionPlaceholder" class="text-center py-8 text-gray-500">
                                             <p>Generate a resume version to select content.</p>
@@ -219,7 +219,7 @@
                                             <form id="formattingForm" class="mt-4 space-y-4"></form>
                                             
                                             <button id="saveConfigBtn" class="mt-4 bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700 app-button">
-                                                Save Configuration for this Application
+                                                Save Configuration
                                             </button>
                                         </div>
                                     </details>
@@ -785,13 +785,11 @@
                     itemData[field] = input.type === 'checkbox' ? input.checked : input.value;
                 }
             });
-
-            // BUG FIX: Explicitly get the jobLink href because it's not an input
+            
             const linkElement = row.querySelector('a');
-            if (linkElement) {
-                itemData.jobLink = linkElement.href;
+            if (linkElement && isApps) { // Only for apps table
+                itemData.jobLink = itemData.jobLink || linkElement.href;
             }
-
 
             try {
                 if (isApps) {
@@ -800,7 +798,6 @@
                     await trackerApi.updateEmail(id, itemData);
                 }
                 
-                // Update status color locally to avoid full refresh lag
                 if (el.dataset.field === 'status') {
                     const colors = isApps ? APP_STATUS_COLORS : EMAIL_STATUS_COLORS;
                     const defaultColor = isApps ? 'To Apply' : 'Sent';
@@ -808,7 +805,7 @@
                     el.className = `w-full border-transparent rounded-md font-medium ${color.bg} ${color.text}`;
                 }
                 
-                await refreshAllTrackers(); // Refresh dashboard
+                await refreshAllTrackers();
             } catch (error) {
                 console.error("Failed to update item", error);
                 alert("Failed to update tracker item.");
@@ -831,7 +828,7 @@
                         await trackerApi.deleteEmail(id);
                     }
                     row.remove();
-                    await refreshAllTrackers(); // Refresh dashboard
+                    await refreshAllTrackers();
                 } catch (error) {
                     alert('Failed to delete item.');
                 }
@@ -925,9 +922,7 @@
             renderFavoritesGrid(companies, status.checkedIds);
         }
 
-        // --- Resume Project Logic (Unchanged from original, just integrated) ---
-        // Includes functions like populateFormattingForm, getVariablesFromForm, renderPdf, etc.
-        // ... This large block of functions remains mostly the same ...
+        // --- Resume Project Logic ---
         const populateFormattingForm = (vars, parentKey = '', container) => {
             container.innerHTML = '';
             for (const key in vars) {
@@ -968,6 +963,7 @@
                 }
             }
         };
+        
         const getVariablesFromForm = () => {
             const result = {};
             const inputs = formattingForm.querySelectorAll('input, select');
@@ -986,6 +982,7 @@
             result.font_settings = { base_font_name: baseFontNameSelect.value };
             return result;
         };
+        
         const getContentSelectionConfig = () => {
             const config = {};
             const inputs = contentSelectionForm.querySelectorAll('input[type="checkbox"], select');
@@ -999,6 +996,7 @@
             });
             return config;
         };
+        
         const applyContentSelectionConfig = (config) => {
             if (!config) return;
             const inputs = contentSelectionForm.querySelectorAll('input[type="checkbox"], select');
@@ -1013,6 +1011,7 @@
                 }
             });
         };
+        
         const mergeVariables = (defaults, overrides) => {
             const merged = JSON.parse(JSON.stringify(defaults));
             if (!overrides) return merged;
@@ -1025,10 +1024,12 @@
             }
             return merged;
         };
+        
         const debouncedRender = () => {
             clearTimeout(renderTimeout);
             renderTimeout = setTimeout(renderPdf, 300);
         };
+
         function populateContentSelection(resumeData) {
             contentSelectionForm.innerHTML = '';
             if (!resumeData) return;
@@ -1084,6 +1085,7 @@
             addSectionCheckboxes('projects', 'Projects', item => item.title);
             addSectionCheckboxes('certifications', 'Certifications', item => item.title);
         }
+        
         function getFilteredResumeData() {
             if (!currentResumeYaml) return {};
             const originalData = jsyaml.load(currentResumeYaml);
@@ -1112,6 +1114,7 @@
             });
             return filteredData;
         }
+        
         async function renderPdf() {
             if (!currentAppId || !currentResumeYaml) return;
             const filteredResumeData = getFilteredResumeData();
@@ -1132,20 +1135,28 @@
                 formattingContent.classList.remove('hidden'); 
             } catch (error) { /* Handled in apiCall */ }
         }
-        function updateUIWithNewResume(resumeYaml) {
+        
+        function updateUIWithNewResume(resumeYaml, isFinalized = false, originalForFinalizedView = null) {
             currentResumeYaml = resumeYaml;
             const hasContent = !!resumeYaml;
-            finalizeBtn.disabled = !hasContent;
+
+            finalizeBtn.disabled = isFinalized || !hasContent;
             trackApplicationBtn.disabled = !hasContent;
+            
             if (hasContent) {
-                const resumeData = jsyaml.load(resumeYaml);
-                populateContentSelection(resumeData);
-                const currentVars = mergeVariables(globalDefaultVars, appSpecificVars);
-                if (currentVars.content_selection) {
-                    applyContentSelectionConfig(currentVars.content_selection);
+                const dataForForm = isFinalized ? originalForFinalizedView : jsyaml.load(resumeYaml);
+                populateContentSelection(dataForForm);
+                
+                if (isFinalized) {
+                    updateChecksBasedOnFinalized(dataForForm, jsyaml.load(resumeYaml));
+                } else {
+                    const currentVars = mergeVariables(globalDefaultVars, appSpecificVars);
+                    if (currentVars.content_selection) {
+                        applyContentSelectionConfig(currentVars.content_selection);
+                    }
                 }
                 contentSelectionForm.classList.remove('hidden');
-                saveContentConfigBtn.classList.remove('hidden');
+                saveContentConfigBtn.classList.toggle('hidden', isFinalized);
                 contentSelectionPlaceholder.classList.add('hidden');
             } else {
                 contentSelectionForm.classList.add('hidden');
@@ -1157,6 +1168,51 @@
             }
             debouncedRender();
         }
+
+        function updateChecksBasedOnFinalized(fullData, finalizedData) {
+            const finalizedKeys = new Set();
+            const createKey = (item, section) => {
+                if (section === 'skills') return Object.keys(item)[0];
+                return item.title || item.school || item.company;
+            };
+
+            Object.keys(finalizedData).forEach(sectionKey => {
+                if (Array.isArray(finalizedData[sectionKey])) {
+                    finalizedData[sectionKey].forEach(item => {
+                        finalizedKeys.add(`${sectionKey}-${createKey(item, sectionKey)}`);
+                    });
+                }
+            });
+
+            const allInputs = contentSelectionForm.querySelectorAll('input[type="checkbox"], select');
+            allInputs.forEach(input => input.disabled = true);
+
+            Object.keys(fullData).forEach(sectionKey => {
+                const sectionCheckbox = contentSelectionForm.querySelector(`input[name="${sectionKey}"]`);
+                let hasVisibleChildren = false;
+
+                if (Array.isArray(fullData[sectionKey])) {
+                    fullData[sectionKey].forEach((item, index) => {
+                        const itemKey = `${sectionKey}-${createKey(item, sectionKey)}`;
+                        const itemCheckbox = contentSelectionForm.querySelector(`input[name="${sectionKey}-${index}"]`);
+                        if (itemCheckbox) {
+                            if (finalizedKeys.has(itemKey)) {
+                                itemCheckbox.checked = true;
+                                hasVisibleChildren = true;
+                            } else {
+                                itemCheckbox.checked = false;
+                            }
+                        }
+                    });
+                }
+                
+                if (sectionCheckbox) {
+                    const isSectionPresent = finalizedData.hasOwnProperty(sectionKey);
+                    sectionCheckbox.checked = isSectionPresent && (hasVisibleChildren || !Array.isArray(fullData[sectionKey]));
+                }
+            });
+        }
+        
         function updateVersionSelector(versions, selectedVersion, hasFinalized) {
             resumeVersionSelect.innerHTML = '';
             if (hasFinalized) {
@@ -1178,6 +1234,7 @@
             }
             resumeVersionSelect.value = selectedVersion;
         }
+        
         function handleAppSelection(appId) {
             const activeTab = document.querySelector('.tab-button.active').dataset.tab;
             currentAppId = appId;
@@ -1188,14 +1245,18 @@
                 selectApplicationForEmail(appId);
             }
         }
+        
         async function selectApplicationForResume(appId) {
             const app = allApplications.find(a => a.appId === appId);
             if (!app) return;
+
             welcomeView.classList.add('hidden');
             applicationView.classList.remove('hidden');
             newAppForm.classList.add('hidden');
             workspace.classList.remove('hidden');
             workspaceTitle.textContent = `${app.company} - ${app.role}`;
+            
+            // Reset UI state
             pdfViewer.src = 'about:blank';
             outputSection.style.visibility = 'hidden';
             formattingContent.classList.add('hidden');
@@ -1205,35 +1266,45 @@
             finalizeBtn.disabled = true;
             trackApplicationBtn.disabled = true;
             finalizeStatus.textContent = '';
+
             try {
                 const [details, defaultVars] = await Promise.all([
                     apiCall(`/applications/${appId}`),
                     apiCall('/default-variables')
                 ]);
+                
                 globalDefaultVars = defaultVars;
                 appSpecificVars = details.customVariables || {};
                 jobDescriptionEditor.innerHTML = details.jobDescription || '';
                 generateResumeBtn.disabled = !details.jobDescription;
+                
                 const versions = details.resumeVersions || [];
-                const hasFinalized = !!details.finalizedResumeYaml;
-                let versionToLoad;
-                let yamlToLoad;
-                if (hasFinalized) {
-                    versionToLoad = 'finalized';
-                    yamlToLoad = details.finalizedResumeYaml;
-                } else {
-                    versionToLoad = versions.length > 0 ? versions[0] : null;
-                    yamlToLoad = details.resumeYaml;
-                }
-                updateVersionSelector(versions, versionToLoad, hasFinalized);
+                const isFinalized = !!details.finalizedResumeYaml;
+                let versionToLoad, yamlToLoad;
+
                 const finalVars = mergeVariables(defaultVars, details.customVariables || {});
                 baseFontNameSelect.value = finalVars.font_settings?.base_font_name || 'Helvetica';
                 populateFormattingForm(finalVars, '', formattingForm);
-                updateUIWithNewResume(yamlToLoad);
+
+                if (isFinalized) {
+                    versionToLoad = 'finalized';
+                    yamlToLoad = details.finalizedResumeYaml;
+                    // **FIX:** Use the latest *tailored* resume as the base for comparison, not the finalized one.
+                    const originalForFinalizedView = details.resumeYaml ? jsyaml.load(details.resumeYaml) : jsyaml.load(yamlToLoad);
+                    updateUIWithNewResume(yamlToLoad, true, originalForFinalizedView);
+                } else {
+                    versionToLoad = versions.length > 0 ? versions[0] : null;
+                    yamlToLoad = details.resumeYaml;
+                    updateUIWithNewResume(yamlToLoad, false);
+                }
+                
+                updateVersionSelector(versions, versionToLoad, isFinalized);
+                
             } catch (error) {
                 console.error(`Could not load data for ${appId}`, error);
             }
         }
+        
         async function selectApplicationForEmail(appId) {
             if (!appId) {
                 emailWelcomeView.style.display = 'flex';
@@ -1242,9 +1313,12 @@
             }
             const app = allApplications.find(a => a.appId === appId);
             if (!app) return;
+
             emailWelcomeView.style.display = 'none';
             emailWorkspace.style.display = 'grid';
             emailWorkspaceTitle.textContent = `${app.company} - ${app.role}`;
+            
+            // Reset fields
             recruiterNameInput.value = '';
             recruiterEmailInput.value = '';
             recruiterLinkedInInput.value = '';
@@ -1257,6 +1331,7 @@
             downloadResumeBtn.disabled = true;
             emailGenStatus.textContent = '';
             emailTrackStatus.textContent = '';
+
             try {
                 const details = await apiCall(`/applications/${appId}`);
                 if (details.emailDetails) {
@@ -1272,6 +1347,7 @@
                        openEmailClientBtn.disabled = false;
                     }
                 }
+
                 if (details.finalizedPdfUrl) {
                     downloadResumeBtn.disabled = false;
                     downloadResumeBtn.onclick = () => {
@@ -1288,6 +1364,7 @@
                 emailGenStatus.textContent = '❌ Error loading application details.';
             }
         }
+        
         async function initializeApp() {
             AVAILABLE_FONTS.forEach(font => {
                 const option = document.createElement('option');
@@ -1302,6 +1379,7 @@
                 applicationList.innerHTML = '<p class="text-red-500 text-sm">Could not load applications.</p>';
             }
         }
+        
         function renderApplicationList(appsToRender) {
             applicationList.innerHTML = appsToRender.length === 0 
                 ? '<p class="text-gray-500 text-sm p-3">No applications found.</p>' 
@@ -1327,6 +1405,23 @@
                 button.addEventListener('click', () => handleAppSelection(app.appId));
                 applicationList.appendChild(button);
             });
+        }
+        
+        async function saveConfiguration(appId, successMessage) {
+            if (!appId) return;
+            try {
+                const formattingVars = getVariablesFromForm();
+                const contentSelection = getContentSelectionConfig();
+                const fullConfig = { ...formattingVars };
+                if (contentSelectionForm.offsetParent !== null && Object.keys(contentSelection).length > 0) {
+                    fullConfig.content_selection = contentSelection;
+                }
+                await apiCall(`/applications/${appId}/save-variables`, 'POST', { variables: fullConfig });
+                alert(successMessage || 'Configuration saved!');
+            } catch (error) {
+                alert('Failed to save configuration.');
+                console.error('Save config error:', error);
+            }
         }
 
         // --- Part 5: Event Listeners ---
@@ -1397,10 +1492,13 @@
             if (!currentAppId || !selectedFilename) return;
             if (selectedFilename === 'finalized') {
                  const details = await apiCall(`/applications/${currentAppId}`);
-                 if(details.finalizedResumeYaml) updateUIWithNewResume(details.finalizedResumeYaml);
+                 if(details.finalizedResumeYaml) {
+                    const originalForFinalized = details.resumeYaml ? jsyaml.load(details.resumeYaml) : jsyaml.load(details.finalizedResumeYaml);
+                    updateUIWithNewResume(details.finalizedResumeYaml, true, originalForFinalized);
+                 }
             } else {
                 const data = await apiCall(`/applications/${currentAppId}/resume-content?filename=${selectedFilename}`);
-                updateUIWithNewResume(data.resumeYaml);
+                updateUIWithNewResume(data.resumeYaml, false);
             }
         });
         generateResumeBtn.addEventListener('click', async () => {
@@ -1414,7 +1512,7 @@
                 const details = await apiCall(`/applications/${currentAppId}`);
                 const hasFinalized = !!details.finalizedResumeYaml;
                 updateVersionSelector(result.resumeVersions, result.filename, hasFinalized);
-                updateUIWithNewResume(result.resumeYaml);
+                updateUIWithNewResume(result.resumeYaml, false);
                 yamlStatus.textContent = `✅ ${result.message}`;
             } catch (error) {
                 yamlStatus.textContent = '❌ Failed to generate new resume version.';
@@ -1436,7 +1534,7 @@
             } catch(e) {
                 finalizeStatus.textContent = '❌ Finalizing failed.';
             } finally {
-                finalizeBtn.disabled = false;
+                // The button will be re-enabled or disabled correctly by selectApplicationForResume
             }
         });
         trackApplicationBtn.addEventListener('click', async () => {
@@ -1456,8 +1554,11 @@
         formattingForm.addEventListener('input', debouncedRender);
         contentSelectionForm.addEventListener('input', debouncedRender);
         baseFontNameSelect.addEventListener('input', debouncedRender);
+        
+        // Connect save buttons
         saveContentConfigBtn.addEventListener('click', () => saveConfiguration(currentAppId, 'Content selection saved!'));
-        saveConfigBtn.addEventListener('click', () => saveConfiguration(currentAppId, 'Configuration saved!'));
+        saveConfigBtn.addEventListener('click', () => saveConfiguration(currentAppId, 'Formatting configuration saved!'));
+
         configFileUpload.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (!file) return;

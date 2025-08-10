@@ -29,7 +29,7 @@ load_dotenv()
 app = FastAPI(
     title="ApplySmart Backend",
     description="Manages job applications, renders PDFs, and generates cold emails.",
-    version="18.2.0" # Version bump for duplicate handling
+    version="18.3.0" # Version bump for button fixes and finalize logic
 )
 
 # --- CORS Middleware ---
@@ -427,27 +427,33 @@ def finalize_resume(app_id: str, request: FinalizeRequest):
         raise HTTPException(status_code=404, detail="Application not found.")
 
     try:
+        # This is the data filtered by the user's checkboxes
         resume_data = yaml.safe_load(request.resumeYaml)
         if 'name' not in resume_data:
             raise HTTPException(status_code=400, detail="Resume data must contain a 'name' field.")
     except yaml.YAMLError:
         raise HTTPException(status_code=400, detail="Invalid YAML format in resume data.")
 
+    # Save the user-selected data to finalized_resume.yaml FIRST.
+    # This represents the user's intent for UI comparison later.
+    final_yaml_path = os.path.join(app_path, "finalized_resume.yaml")
+    with open(final_yaml_path, 'w', encoding='utf-8') as f:
+        yaml.dump(resume_data, f, sort_keys=False, allow_unicode=True)
+
+    # Now, prepare the data for the PDF, which might involve trimming long lines.
     pdf_generator = ATSResumePDFGenerator(variables=request.variables)
     dummy_doc = SimpleDocTemplate(os.path.join(app_path, "dummy.pdf"), pagesize=letter, rightMargin=0.4*inch, leftMargin=0.4*inch, topMargin=0.4*inch, bottomMargin=0.4*inch)
     trimmed_resume_data = pdf_generator.preprocess_data_for_fitting(resume_data, dummy_doc.width)
-
-    final_yaml_path = os.path.join(app_path, "finalized_resume.yaml")
-    with open(final_yaml_path, 'w', encoding='utf-8') as f:
-        yaml.dump(trimmed_resume_data, f, sort_keys=False, allow_unicode=True)
-
+    
     safe_name = "".join(c if c.isalnum() else '_' for c in resume_data['name'])
     final_pdf_name = f"Resume_{safe_name}.pdf"
     final_pdf_path = os.path.join(app_path, final_pdf_name)
 
     try:
+        # Generate the PDF using the potentially trimmed data
         pdf_generator.generate_pdf_from_data(trimmed_resume_data, final_pdf_path)
         update_app_details(app_path, {"name": safe_name})
+        
         if os.path.exists(os.path.join(app_path, "dummy.pdf")):
             os.remove(os.path.join(app_path, "dummy.pdf"))
         
@@ -456,6 +462,7 @@ def finalize_resume(app_id: str, request: FinalizeRequest):
         if os.path.exists(os.path.join(app_path, "dummy.pdf")):
             os.remove(os.path.join(app_path, "dummy.pdf"))
         raise HTTPException(status_code=500, detail=f"Failed to generate final PDF: {str(e)}")
+
 
 @app.get("/applications/{app_id}/finalized-pdf")
 def get_finalized_pdf(app_id: str):
