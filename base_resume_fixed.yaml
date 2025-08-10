@@ -99,7 +99,7 @@ experience:
     company: DRINKS
     location: San Francisco, USA
     dates: Oct 2024 - Jun 2025
-    context: "Built an AI-powered wine recommendation system using OpenAI LLMs, RAG architecture, Pinecone vector search, and AWS Bedrock for scalable, low-latency retrieval. Deployed backend with Flask and Lambda, integrated with a JavaScript frontend, and drove company-wide adoption through executive presentations."
+    context: "Built an AI-powered wine recommendation system using OpenAI LLMs, RAG architecture, Pinecone vector search, and AWS Bedrock. Deployed backend with Flask and Lambda, integrated with a JavaScript frontend, and drove company-wide adoption through executive presentations."
   - title: Principal Analyst
     company: AB InBev
     location: Bangalore, India
@@ -127,6 +127,9 @@ projects:
   - title: AI Photo Colorizer
     dates: Jan 2025 - Feb 2025
     context: "Developed a full-stack deep learning app for image colorization using a custom UNet in PyTorch, optimized with L1 loss and OpenCV pipelines. Deployed the model via a Flask web app with real-time inference, modular backend, and an interactive UI for smooth image uploads and downloads."
+  - title: Medical Assistance Tool
+    dates: Apr 2021 - May 2021
+    context: "Built and trained a CBOW Word2Vec model with Keras and TensorFlow, implementing a full NLP pipeline from corpus preprocessing to a multi-layer neural network with softmax output, optimized with Adam, and visualized embeddings using PCA."
 
 certifications:
   - title: AWS Certified AI Practitioner

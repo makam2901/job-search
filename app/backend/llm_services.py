@@ -103,14 +103,14 @@ def agent_resume_tailor(jd_text: str, fixed_resume_yaml: str, model_provider: st
     and returns only the AI-generated content in a structured format.
     """
     prompt = f"""
-You are an expert ATS resume writer and career coach. Your task is to transform a candidate's information into a high-impact, ATS-optimized resume that tells a compelling story of problem-solving heavily relevant to the job description. You can access the internet to help your decision-making for tailoring. You must output a valid JSON string.
+You are an expert ATS resume architect and career strategist. Your sole function is to deconstruct a target job description and completely re-engineer a candidate's information into a high-impact ATS optimized resume. Your primary directive is to make the candidate appear as the perfect-fit applicant by strategically inventing and aligning their experience with the role's requirements. You must output a valid JSON string.
 
 **Target Job Description:**
 ---
 {jd_text}
 ---
 
-**Candidate's Fixed Information & Context (Use the 'context' field as a creative seed):**
+**Candidate's Base Information & Context (Use as a creative seed):**
 ```yaml
 {fixed_resume_yaml}
 ```
@@ -120,39 +120,34 @@ You are an expert ATS resume writer and career coach. Your task is to transform 
 Generate a JSON structure containing ONLY the following keys: `summary`, `skills_reordered`, `experience_bullets`, and `projects_reordered`.
 
 1.  **`summary`**:
-    - Write a powerful, 1-line professional summary (max 20 words, make the entire line is 140 characters strictly.) that perfectly mirrors the top requirements of the job description, optimized for ATS keyword matching. My experience is 3 years.
+    - Write a powerful, 1-line professional summary (max 20 words, entire line must be under 140 characters) that perfectly mirrors the top requirements of the job description. State the candidate has 3 years of experience.
 
 2.  **`skills_reordered`**:
-    - **Reorder the skill category blocks** from the fixed information based on their relevance to the job description.
+    - **Reorder the skill category blocks** from the fixed information based on their relevance to the job description. Retain all categories.
     - **Reorder the individual skills within each category** to prioritize those most relevant to the job description first.
-    - **Identify skills mentioned in the job description that are missing** from the candidate's list but are relevant to their profile. Make sure you are not repeating skills acorss the categories as well.
+    - **Identify skills mentioned in the job description that are missing** from the candidate's list but are relevant to their profile. Make sure you are not repeating skills across the categories as well.
     - **Insert these new, relevant skills into the most appropriate existing categories**, maintaining the relevance-based order. Do NOT create new categories.
 
 3.  **`experience_bullets`**:
-    - All the content should heavily be dependent on the job description.
-    - Incoorporate the industry if mentioned in the job description. Ex: if finance is mentioned, invent saying financial data or financial reports.
-    - This is your most critical task. You must generate bullet points using the **Problem-Action-Result (PAR)** framework. do it for majority of the bullet points. Just optimise for ATS.
+    - **Re-engineer from scratch:** Do NOT just rephrase the context from the YAML. Your task is to **invent new, highly relevant bullet points** that directly address the challenges and requirements of the job description.
+    - **Inject industry context:** If the job description mentions a specific industry (e.g., finance, healthcare), you MUST invent details reflecting that context (e.g., "analyzed financial reports," "processed patient data") only if it aligns with the context. For example: there can be financial reports in beverages company, but it wont have access to healthcare records right.
     - For majority bullets, you must first articulate the business **problem** or **challenge**, then the **action** taken, and finally the **quantifiable result**.
-    - **INVENT ACTION POINTS**: From the context provided understand the intent of the work and extrapolate / invent action points highly based on the job description. Do NOT just rephrase the existing points. 
     - **INVENT QUANTIFIABLE METRICS.** For majority bullets **MUST** include a plausible, impactful metric. Invent realistic ones if not provided. Examples: "reduced latency by 30%", "processed 500GB of data", "increased user engagement by 15%", "saved $50,000 in operational costs".
-    - Word Count: make the entire line is 140 characters. strict.
+    - Word Count: make the entire line is 135 characters. strict.
     - **Strategic Bolding**: Identify the most critical parts of each bullet points based on the bullet itself and the job description. Wrap these keywords in `<b>...</b>` tags. Use this sparingly—aim for 1-3 bolded phrases per bullet to maximize impact without cluttering the text.
     - Number of Bullets:
         - DRINKS: 4 points
         - AB INBEV: 8 points
         - Janta Ka Mood: 2 points
+    - Example: if JD require experience with Databricks, etc. then make sure you include that in the bullet points.
 
 4.  **`projects_reordered`**:
-    - Reorder projects based on job relevance.
-    - All the content should heavily be dependent on the job description.
-    - Incoorporate the industry if mentioned in the job description. Ex: if finance is mentioned, invent saying financial data or financial reports.
-    - This is your most critical task. You must generate bullet points using the **Problem-Action-Result (PAR)** framework. do it for majority of the bullet points. Just optimise for ATS.
-    - For majority bullets, you must first articulate the business **problem** or **challenge**, then the **action** taken, and finally the **quantifiable result**.
-    - **INVENT ACTION POINTS**: From the context provided understand the intent of the work and extrapolate / invent action points highly based on the job description. Do NOT just rephrase the existing points. 
-    - **INVENT QUANTIFIABLE METRICS.** For majority bullets **MUST** include a plausible, impactful metric. Invent realistic ones if not provided. Examples: "reduced latency by 30%", "processed 500GB of data", "increased user engagement by 15%", "saved $50,000 in operational costs".
-    - Word Count: make the entire line is 140 characters. strict.
-    - **Strategic Bolding**: Identify the most critical parts of each bullet points based on the bullet itself and the job description. Wrap these keywords in `<b>...</b>` tags. Use this sparingly—aim for 1-3 bolded phrases per bullet to maximize impact without cluttering the text.
-    - Include the original `title` and `dates` for each project.
+    - **Follow all rules from the `experience_bullets` section:** Re-engineer the content to be heavily job-description-focused, inject industry context, use the PAR framework, and invent compelling, quantifiable metrics for each bullet.
+    - Keep the original `title` and `dates` for each project.
+    - Each bullet must be under 140 characters.
+    - Use strategic `<b>...</b>` bolding.
+    - Only 2 bullets per project.
+    - Reorder the projects based on the relevance of generated bullets to the job description.
 
 **Output Format & Example:**
 Your entire output MUST be a single, valid JSON string without any other text, explanations, or markdown. It must follow this exact structure:

@@ -293,6 +293,7 @@ def generate_resume(app_id: str, request: GenerateResumeRequest):
         jd_text = soup.get_text(separator='\n', strip=True)
 
     generated_content_str = agent_resume_tailor(jd_text, fixed_resume_yaml, request.modelProvider)
+    # print(generated_content_str)  # Debugging output to check LLM response
     
     try:
         generated_data = yaml.safe_load(generated_content_str)
