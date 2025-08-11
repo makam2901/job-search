@@ -52,7 +52,7 @@ Applications
     - The Finalize Resume button takes your currently selected content and formatting, saves it as a permanent `finalized_resume.yaml` and *Resume_{Your_Name}.pdf*, and locks it in.
     - The Track Application button (enabled after finalization) sends the application details directly to the Tracker tab.
 
-#### User Journey Example (`` Tab):
+#### User Journey Example (`Applications` Tab):
 
 1. Alex finds a Data Scientist role at "Innovate Inc.".
 2. In ApplySmart, Alex clicks `New Application`, enters "Innovate Inc." and "Data Scientist", and saves the project.
