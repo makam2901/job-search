@@ -32,13 +32,11 @@
 
         /* Main Tab styling */
         .tab-button.active { border-color: #3b82f6; color: #3b82f6; background-color: #eff6ff; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
+        .tab-content.hidden { display: none; }
 
         /* Tracker Sub-Tab Styling */
         .tracker-tab-button.active { border-color: #3b82f6; color: #3b82f6; font-weight: 600; }
-        .tracker-tab-content { display: none; }
-        .tracker-tab-content.active { display: block; }
+        .tracker-tab-content.hidden { display: none; }
         
         /* Tracker Table Styling */
         .tracker-table th, .tracker-table td { padding: 12px 15px; text-align: left; vertical-align: middle; }
@@ -64,7 +62,7 @@
 
     <div class="flex h-screen">
         <!-- Sidebar -->
-        <aside id="sidebar" class="w-80 bg-white border-r border-gray-200 p-4 flex-col shrink-0">
+        <aside id="sidebar" class="w-80 bg-white border-r border-gray-200 p-4 flex flex-col shrink-0">
             <div class="flex justify-between items-center mb-6 h-8 relative">
                 <h1 class="text-2xl font-bold text-blue-600 flex items-center justify-center w-full">
                     <span class="sidebar-icon-only font-bold">AS</span>
@@ -100,6 +98,7 @@
                 </div>
                 <nav class="-mb-px flex space-x-6 px-4" aria-label="Tabs">
                     <button data-tab="applications" class="tab-button active shrink-0 border-b-2 font-medium px-1 py-4 text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">Applications</button>
+                    <button data-tab="cover-letter" class="tab-button shrink-0 border-b-2 font-medium px-1 py-4 text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">Cover Letter</button>
                     <button data-tab="email" class="tab-button shrink-0 border-b-2 font-medium px-1 py-4 text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">Email</button>
                     <button data-tab="favorites" class="tab-button shrink-0 border-b-2 font-medium px-1 py-4 text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">Favorites</button>
                     <button data-tab="tracker" class="tab-button shrink-0 border-b-2 font-medium px-1 py-4 text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">Tracker</button>
@@ -151,8 +150,9 @@
                                 <div class="bg-white p-6 rounded-lg shadow-md mb-8">
                                     <h3 class="text-xl font-semibold mb-4">1. Job Description</h3>
                                     <div id="jobDescriptionEditor" contenteditable="true" class="w-full border border-gray-300 rounded-lg p-4 min-h-[150px] overflow-y-auto bg-gray-50"></div>
-                                    <div class="mt-4 flex space-x-4">
+                                    <div class="mt-4 flex space-x-4 items-center">
                                         <button id="saveJDBtn" class="bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-600 app-button">Save JD</button>
+                                        <p id="jdStatus" class="text-sm text-gray-600 h-5"></p>
                                     </div>
                                 </div>
 
@@ -171,9 +171,9 @@
                                                 <svg id="yamlSpinner" class="spinner -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                                                 ✨ Generate New Version
                                             </button>
+                                            <p id="yamlStatus" class="text-sm text-gray-600 h-5"></p>
                                         </div>
                                     </div>
-                                     <p id="yamlStatus" class="text-sm text-gray-600 mt-2"></p>
                                 </div>
                                 
                                 <div id="contentSelectionWrapper" class="bg-white p-6 rounded-lg shadow-md mb-8">
@@ -184,9 +184,12 @@
                                             <select id="resumeVersionSelect" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"></select>
                                         </div>
                                         <form id="contentSelectionForm" class="mt-4 border-t pt-4 space-y-2 hidden"></form>
-                                        <button id="saveContentConfigBtn" class="hidden mt-4 bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700 app-button">
-                                            Save Selected Content
-                                        </button>
+                                         <div class="flex items-center mt-4">
+                                            <button id="saveContentConfigBtn" class="hidden bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700 app-button">
+                                                Save Selected Content
+                                            </button>
+                                            <p id="contentConfigStatus" class="text-sm text-gray-600 ml-4 h-5"></p>
+                                        </div>
                                         <div id="contentSelectionPlaceholder" class="text-center py-8 text-gray-500">
                                             <p>Generate a resume version to select content.</p>
                                         </div>
@@ -218,9 +221,12 @@
 
                                             <form id="formattingForm" class="mt-4 space-y-4"></form>
                                             
-                                            <button id="saveConfigBtn" class="mt-4 bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700 app-button">
-                                                Save Configuration
-                                            </button>
+                                            <div class="flex items-center mt-4">
+                                                <button id="saveConfigBtn" class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700 app-button">
+                                                    Save Configuration
+                                                </button>
+                                                <p id="configStatus" class="text-sm text-gray-600 ml-4 h-5"></p>
+                                            </div>
                                         </div>
                                     </details>
                                 </div>
@@ -235,7 +241,7 @@
                                             Track Application
                                         </button>
                                     </div>
-                                    <p id="finalizeStatus" class="text-xs text-gray-500 mt-2 text-center h-4"></p>
+                                    <p id="finalizeStatus" class="text-sm text-gray-500 mt-2 text-center h-5"></p>
                                 </div>
                             </div>
 
@@ -249,9 +255,66 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Cover Letter Tab Content -->
+            <div id="coverLetterContent" class="tab-content h-full overflow-hidden hidden">
+                <div id="coverLetterWelcomeView" class="text-center flex flex-col items-center justify-center h-full">
+                    <h2 class="text-3xl font-bold mb-2">Cover Letter Generator</h2>
+                    <p class="text-gray-600 max-w-md">Select a finalized application from the list on the left to create a tailored cover letter.</p>
+                </div>
+                <div id="coverLetterWorkspace" class="h-full grid grid-cols-12 gap-6 p-6 bg-gray-100 hidden">
+                    <!-- Middle Pane -->
+                    <div class="col-span-12 lg:col-span-5 bg-white p-6 rounded-lg shadow-md overflow-y-auto custom-scrollbar">
+                        <h2 id="coverLetterWorkspaceTitle" class="text-2xl font-bold mb-4"></h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="clJobDescription" class="block text-sm font-medium text-gray-700">Job Description</label>
+                                <div id="clJobDescription" class="mt-1 w-full p-2 border border-gray-200 rounded-md bg-gray-50 h-40 overflow-y-auto"></div>
+                            </div>
+                            <div>
+                                <label for="clAdditionalDetails" class="block text-sm font-medium text-gray-700">Additional Details / Notes for AI</label>
+                                <textarea id="clAdditionalDetails" rows="5" class="mt-1 w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., Emphasize my experience with cloud platforms."></textarea>
+                            </div>
+                            <div class="border-t pt-4 space-y-4">
+                                <div>
+                                    <label for="clModelProvider" class="block text-sm font-medium text-gray-700 mb-1">Select AI Model</label>
+                                    <select id="clModelProvider" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="gemini">Google Gemini Pro</option>
+                                        <option value="chatgpt">ChatGPT (OpenRouter)</option>
+                                    </select>
+                                </div>
+                                <div class="flex items-center space-x-4">
+                                    <button id="generateCoverLetterBtn" class="bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 flex items-center justify-center app-button">
+                                        <svg id="clSpinner" class="spinner -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                        Generate Cover Letter
+                                    </button>
+                                    <p id="clGenStatus" class="text-sm text-gray-600 h-5"></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Right Pane -->
+                    <div class="col-span-12 lg:col-span-7 bg-white p-6 rounded-lg shadow-md flex flex-col">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xl font-semibold">Cover Letter Preview</h3>
+                            <div class="flex items-center space-x-2">
+                                <button id="saveCoverLetterBtn" class="bg-blue-600 text-white font-semibold py-2 px-3 rounded-lg hover:bg-blue-700 app-button" disabled>Save Text</button>
+                                <button id="downloadCoverLetterBtn" class="bg-gray-600 text-white font-semibold py-2 px-3 rounded-lg hover:bg-gray-700 app-button" disabled>Download PDF</button>
+                                <p id="clSaveStatus" class="text-sm text-gray-600 h-5"></p>
+                            </div>
+                        </div>
+                        <div class="flex-grow grid grid-cols-2 gap-4 overflow-hidden">
+                            <textarea id="coverLetterEditor" class="w-full h-full border border-gray-200 rounded-md p-3 focus:ring-blue-500 focus:border-blue-500 custom-scrollbar" placeholder="Generated cover letter text will appear here..."></textarea>
+                            <div id="coverLetterPdfViewerContainer" class="w-full h-full border border-gray-300 rounded-lg bg-gray-200">
+                                <iframe id="coverLetterPdfViewer" class="w-full h-full" frameborder="0"></iframe>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             
             <!-- Favorites Tab Content -->
-            <div id="favoritesContent" class="tab-content h-full overflow-y-auto p-8">
+            <div id="favoritesContent" class="tab-content h-full overflow-y-auto p-8 hidden">
                 <div class="bg-white p-6 rounded-lg shadow-md mb-8">
                     <h3 class="text-2xl font-semibold mb-4">Add a Favorite Company</h3>
                     <form id="favoritesForm" class="flex items-end gap-4">
@@ -268,13 +331,13 @@
             </div>
 
             <!-- Email Tab Content -->
-            <div id="emailContent" class="tab-content h-full grid grid-cols-12 gap-6 p-6 bg-gray-100 overflow-hidden" style="display: grid;">
+            <div id="emailContent" class="tab-content h-full grid grid-cols-12 gap-6 p-6 bg-gray-100 overflow-hidden hidden">
                 <div id="emailWelcomeView" class="col-span-12 text-center flex flex-col items-center justify-center h-full">
                     <h2 class="text-3xl font-bold mb-2">Cold Email Assistant</h2>
                     <p class="text-gray-600 max-w-md">Select a finalized application from the list on the left to start generating a personalized cold email.</p>
                 </div>
 
-                <div id="emailWorkspace" class="hidden col-span-12 h-full grid grid-cols-12 gap-6">
+                <div id="emailWorkspace" class="col-span-12 h-full grid grid-cols-12 gap-6 hidden">
                     <!-- Middle Pane (Email Details & Generation) -->
                     <div class="col-span-12 lg:col-span-5 bg-white p-6 rounded-lg shadow-md overflow-y-auto custom-scrollbar">
                         <h2 id="emailWorkspaceTitle" class="text-2xl font-bold mb-4"></h2>
@@ -303,11 +366,13 @@
                                         <option value="chatgpt">ChatGPT (OpenRouter)</option>
                                     </select>
                                 </div>
-                                <button id="generateEmailBtn" class="w-full bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 flex items-center justify-center app-button">
-                                    <svg id="emailSpinner" class="spinner -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                                    Generate & Save Email
-                                </button>
-                                <p id="emailGenStatus" class="text-sm text-gray-600 mt-2 text-center"></p>
+                                <div class="flex items-center space-x-4">
+                                    <button id="generateEmailBtn" class="w-full bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 flex items-center justify-center app-button">
+                                        <svg id="emailSpinner" class="spinner -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                        Generate & Save Email
+                                    </button>
+                                    <p id="emailGenStatus" class="text-sm text-gray-600 h-5"></p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -341,14 +406,14 @@
                                     <button id="openEmailClientBtn" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 app-button" disabled>Open in Email Client</button>
                                 </div>
                             </div>
-                            <p id="emailTrackStatus" class="text-xs text-gray-500 mt-2 text-right h-4"></p>
+                            <p id="emailTrackStatus" class="text-sm text-gray-500 mt-2 text-right h-5"></p>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Tracker Tab Content -->
-            <div id="trackerContent" class="tab-content h-full overflow-y-auto p-8">
+            <div id="trackerContent" class="tab-content h-full overflow-y-auto p-8 hidden">
                 <!-- Sub-tabs -->
                 <div class="mb-6 border-b border-gray-200">
                     <nav id="trackerSubTabs" class="-mb-px flex space-x-6" aria-label="Tracker Tabs">
@@ -410,7 +475,7 @@
                 </div>
 
                 <!-- Emails Tracker Content -->
-                <div id="emailsTracker" class="tracker-tab-content">
+                <div id="emailsTracker" class="tracker-tab-content hidden">
                      <div class="bg-white rounded-lg shadow-md overflow-hidden">
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm tracker-table">
@@ -427,7 +492,7 @@
             </div>
 
             <!-- Dashboard Tab Content -->
-            <div id="dashboardContent" class="tab-content h-full overflow-y-auto p-8 space-y-8">
+            <div id="dashboardContent" class="tab-content h-full overflow-y-auto p-8 space-y-8 hidden">
                 <!-- Applications Section -->
                 <div>
                     <h2 class="text-2xl font-bold mb-4 text-gray-700">Applications Dashboard</h2>
@@ -546,6 +611,7 @@
         
         // Workspace Elements
         const saveJDBtn = document.getElementById('saveJDBtn');
+        const jdStatus = document.getElementById('jdStatus');
         const jobDescriptionEditor = document.getElementById('jobDescriptionEditor');
         const generateResumeBtn = document.getElementById('generateResumeBtn');
         const resumeModelProviderSelect = document.getElementById('resumeModelProvider');
@@ -555,7 +621,9 @@
         const pdfViewer = document.getElementById('pdfViewer');
         const formattingForm = document.getElementById('formattingForm');
         const saveConfigBtn = document.getElementById('saveConfigBtn');
+        const configStatus = document.getElementById('configStatus');
         const saveContentConfigBtn = document.getElementById('saveContentConfigBtn');
+        const contentConfigStatus = document.getElementById('contentConfigStatus');
         const configFileUpload = document.getElementById('configFileUpload');
         const fileNameDisplay = document.getElementById('fileNameDisplay');
         const resetConfigBtn = document.getElementById('resetConfigBtn');
@@ -569,6 +637,23 @@
         const versionSelectorContainer = document.getElementById('versionSelectorContainer');
         const contentSelectionPlaceholder = document.getElementById('contentSelectionPlaceholder');
         const formattingContent = document.getElementById('formattingContent');
+
+        // Cover Letter Elements
+        const coverLetterWelcomeView = document.getElementById('coverLetterWelcomeView');
+        const coverLetterWorkspace = document.getElementById('coverLetterWorkspace');
+        const coverLetterWorkspaceTitle = document.getElementById('coverLetterWorkspaceTitle');
+        const clJobDescription = document.getElementById('clJobDescription');
+        const clAdditionalDetails = document.getElementById('clAdditionalDetails');
+        const clModelProvider = document.getElementById('clModelProvider');
+        const generateCoverLetterBtn = document.getElementById('generateCoverLetterBtn');
+        const clSpinner = document.getElementById('clSpinner');
+        const clGenStatus = document.getElementById('clGenStatus');
+        const coverLetterEditor = document.getElementById('coverLetterEditor');
+        const coverLetterPdfViewer = document.getElementById('coverLetterPdfViewer');
+        const saveCoverLetterBtn = document.getElementById('saveCoverLetterBtn');
+        const downloadCoverLetterBtn = document.getElementById('downloadCoverLetterBtn');
+        const clSaveStatus = document.getElementById('clSaveStatus');
+
 
         // Email Tab Elements
         const emailWelcomeView = document.getElementById('emailWelcomeView');
@@ -614,14 +699,15 @@
                 const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
                 if (!response.ok) {
                     const errorData = await response.json();
-                    throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+                    const error = new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+                    error.status = response.status;
+                    throw error;
                 }
                 if (isBlob) return await response.blob();
-                if (response.status === 204) return null; // Handle No Content
+                if (response.status === 204) return null; 
                 return response.headers.get("content-type")?.includes("application/json") ? await response.json() : null;
             } catch (error) {
                 console.error('API Call Error:', error);
-                alert(`An error occurred: ${error.message}`);
                 throw error;
             }
         }
@@ -649,28 +735,38 @@
 
         // --- Part 4: UI Rendering & Logic ---
         
+        function showStatusMessage(element, message, isError = false, duration = 3000) {
+            element.textContent = message;
+            element.style.color = isError ? '#ef4444' : '#10b981';
+            setTimeout(() => {
+                element.textContent = '';
+            }, duration);
+        }
+        
         function switchTab(tabName) {
             tabButtons.forEach(button => button.classList.toggle('active', button.dataset.tab === tabName));
             tabContents.forEach(content => {
-                const isActive = content.id === `${tabName}Content`;
-                content.style.display = isActive ? (content.id === 'emailContent' ? 'grid' : 'block') : 'none';
+                const isActive = content.id.startsWith(tabName);
+                content.classList.toggle('hidden', !isActive);
+                content.classList.toggle('active', isActive);
+
                 if (isActive) {
-                    content.classList.add('active');
                     if (tabName === 'tracker' || tabName === 'dashboard') {
                         refreshAllTrackers();
                     }
-                } else {
-                    content.classList.remove('active');
                 }
             });
             
-            const showSidebar = (tabName === 'applications' || tabName === 'email');
-            sidebar.style.display = showSidebar ? 'flex' : 'none';
+            const showSidebar = ['applications', 'email', 'cover-letter'].includes(tabName);
+            sidebar.classList.toggle('hidden', !showSidebar);
             mainHeaderLogo.classList.toggle('hidden', showSidebar);
             sidebarExpander.classList.toggle('hidden', !showSidebar || !sidebar.classList.contains('collapsed'));
 
             if (tabName === 'email') {
                 selectApplicationForEmail(currentAppId);
+            }
+            if (tabName === 'cover-letter') {
+                selectApplicationForCoverLetter(currentAppId);
             }
         }
 
@@ -683,6 +779,7 @@
                 button.classList.toggle('hover:border-gray-300', !isActive);
             });
             trackerTabContents.forEach(content => {
+                content.classList.toggle('hidden', content.id !== `${tabName}Tracker`);
                 content.classList.toggle('active', content.id === `${tabName}Tracker`);
             });
         }
@@ -807,8 +904,7 @@
                 
                 await refreshAllTrackers();
             } catch (error) {
-                console.error("Failed to update item", error);
-                alert("Failed to update tracker item.");
+                showStatusMessage(finalizeStatus, `Failed to update tracker item: ${error.message}`, true);
             }
         }
 
@@ -830,7 +926,7 @@
                     row.remove();
                     await refreshAllTrackers();
                 } catch (error) {
-                    alert('Failed to delete item.');
+                    showStatusMessage(finalizeStatus, `Failed to delete item: ${error.message}`, true);
                 }
             }
         }
@@ -1153,7 +1249,7 @@
                 pdfViewer.src = URL.createObjectURL(pdfBlob);
                 outputSection.style.visibility = 'visible';
                 formattingContent.classList.remove('hidden'); 
-            } catch (error) { /* Handled in apiCall */ }
+            } catch (error) { showStatusMessage(finalizeStatus, `Preview failed: ${error.message}`, true); }
         }
         
         function updateUIWithNewResume(resumeYaml, isFinalized = false, originalForFinalizedView = null) {
@@ -1161,7 +1257,7 @@
             const hasContent = !!resumeYaml;
 
             finalizeBtn.disabled = isFinalized || !hasContent;
-            trackApplicationBtn.disabled = !isFinalized; // FIX: Only enable tracking if finalized
+            trackApplicationBtn.disabled = !isFinalized;
             
             if (hasContent) {
                 const dataForForm = isFinalized ? originalForFinalizedView : jsyaml.load(resumeYaml);
@@ -1263,6 +1359,8 @@
                 selectApplicationForResume(appId);
             } else if (activeTab === 'email') {
                 selectApplicationForEmail(appId);
+            } else if (activeTab === 'cover-letter') {
+                selectApplicationForCoverLetter(appId);
             }
         }
         
@@ -1320,21 +1418,75 @@
                 updateVersionSelector(versions, versionToLoad, isFinalized);
                 
             } catch (error) {
-                console.error(`Could not load data for ${appId}`, error);
+                showStatusMessage(finalizeStatus, `Could not load data for ${appId}: ${error.message}`, true);
             }
         }
-        
-        async function selectApplicationForEmail(appId) {
+
+        async function selectApplicationForCoverLetter(appId) {
             if (!appId) {
-                emailWelcomeView.style.display = 'flex';
-                emailWorkspace.style.display = 'none';
+                coverLetterWelcomeView.classList.remove('hidden');
+                coverLetterWorkspace.classList.add('hidden');
                 return;
             }
             const app = allApplications.find(a => a.appId === appId);
             if (!app) return;
 
-            emailWelcomeView.style.display = 'none';
-            emailWorkspace.style.display = 'grid';
+            coverLetterWelcomeView.classList.add('hidden');
+            coverLetterWorkspace.classList.remove('hidden');
+            coverLetterWorkspaceTitle.textContent = `${app.company} - ${app.role}`;
+            
+            // Reset fields
+            clJobDescription.innerHTML = '';
+            clAdditionalDetails.value = '';
+            coverLetterEditor.value = '';
+            coverLetterPdfViewer.src = 'about:blank';
+            generateCoverLetterBtn.disabled = true;
+            saveCoverLetterBtn.disabled = true;
+            downloadCoverLetterBtn.disabled = true;
+            clGenStatus.textContent = '';
+            clSaveStatus.textContent = '';
+
+            try {
+                const details = await apiCall(`/applications/${appId}`);
+                if (details.jobDescription) {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = details.jobDescription;
+                    clJobDescription.textContent = tempDiv.textContent || tempDiv.innerText || '';
+                }
+
+                if (details.coverLetter) {
+                    clAdditionalDetails.value = details.coverLetter.additionalDetails || '';
+                    coverLetterEditor.value = (details.coverLetter.generatedBody || '').replace(/\\n/g, '\n');
+                }
+
+                if (details.finalizedResumeYaml) {
+                    generateCoverLetterBtn.disabled = false;
+                } else {
+                    clGenStatus.textContent = '⚠️ Please finalize a resume first.';
+                }
+
+                if (details.coverLetter && details.coverLetter.pdfUrl) {
+                    coverLetterPdfViewer.src = `${API_BASE_URL}${details.coverLetter.pdfUrl}`;
+                    saveCoverLetterBtn.disabled = false;
+                    downloadCoverLetterBtn.disabled = false;
+                }
+
+            } catch (error) {
+                showStatusMessage(clGenStatus, `Error loading details: ${error.message}`, true);
+            }
+        }
+        
+        async function selectApplicationForEmail(appId) {
+            if (!appId) {
+                emailWelcomeView.classList.remove('hidden');
+                emailWorkspace.classList.add('hidden');
+                return;
+            }
+            const app = allApplications.find(a => a.appId === appId);
+            if (!app) return;
+
+            emailWelcomeView.classList.add('hidden');
+            emailWorkspace.classList.remove('hidden');
             emailWorkspaceTitle.textContent = `${app.company} - ${app.role}`;
             
             // Reset fields
@@ -1373,14 +1525,13 @@
                         window.open(`${API_BASE_URL}${details.finalizedPdfUrl}`);
                     };
                 } else {
-                    emailGenStatus.textContent = '⚠️ Please finalize a resume in the "Applications" tab first.';
+                    showStatusMessage(emailGenStatus, '⚠️ Please finalize a resume in the "Applications" tab first.', true);
                     generateEmailBtn.disabled = true;
                     return;
                 }
                 generateEmailBtn.disabled = false;
             } catch (error) {
-                console.error('Error fetching details for email tab:', error);
-                emailGenStatus.textContent = '❌ Error loading application details.';
+                showStatusMessage(emailGenStatus, `Error loading details: ${error.message}`, true);
             }
         }
         
@@ -1426,7 +1577,7 @@
             });
         }
         
-        async function saveConfiguration(appId, successMessage) {
+        async function saveConfiguration(appId, statusElement, successMessage) {
             if (!appId) return;
             try {
                 const formattingVars = getVariablesFromForm();
@@ -1436,10 +1587,9 @@
                     fullConfig.content_selection = contentSelection;
                 }
                 await apiCall(`/applications/${appId}/save-variables`, 'POST', { variables: fullConfig });
-                alert(successMessage || 'Configuration saved!');
+                showStatusMessage(statusElement, successMessage);
             } catch (error) {
-                alert('Failed to save configuration.');
-                console.error('Save config error:', error);
+                showStatusMessage(statusElement, `Failed to save: ${error.message}`, true);
             }
         }
 
@@ -1465,9 +1615,8 @@
         // Resume Project Creation/Selection
         newApplicationBtn.addEventListener('click', () => {
             currentAppId = null;
-            welcomeView.classList.add('hidden');
-            applicationView.classList.remove('hidden');
-            workspace.classList.add('hidden');
+            welcomeView.classList.remove('hidden');
+            applicationView.classList.add('hidden');
             newAppForm.classList.remove('hidden');
             companyNameInput.value = '';
             roleTitleInput.value = '';
@@ -1479,7 +1628,10 @@
         createApplicationBtn.addEventListener('click', async () => {
             const company = companyNameInput.value.trim();
             const role = roleTitleInput.value.trim();
-            if (!company || !role) return alert('Please provide both Company Name and Role Title.');
+            if (!company || !role) {
+                showStatusMessage(createApplicationBtn.nextElementSibling, 'Company and Role are required.', true);
+                return;
+            }
             createApplicationBtn.disabled = true;
             try {
                 const payload = { companyName: company, roleTitle: role, jobId: jobIdInput.value.trim(), jobLink: jobLinkInput.value.trim() };
@@ -1501,10 +1653,17 @@
         saveJDBtn.addEventListener('click', async () => {
             if (!currentAppId) return;
             const htmlContent = jobDescriptionEditor.innerHTML.trim();
-            if (!htmlContent) return alert('Job description cannot be empty.');
-            await apiCall(`/applications/${currentAppId}/job-description`, 'POST', { htmlContent });
-            generateResumeBtn.disabled = false;
-            alert('Job Description saved!');
+            if (!htmlContent) {
+                showStatusMessage(jdStatus, 'Job description cannot be empty.', true);
+                return;
+            }
+            try {
+                await apiCall(`/applications/${currentAppId}/job-description`, 'POST', { htmlContent });
+                generateResumeBtn.disabled = false;
+                showStatusMessage(jdStatus, '✅ Job Description saved!');
+            } catch (error) {
+                showStatusMessage(jdStatus, `Save failed: ${error.message}`, true);
+            }
         });
         resumeVersionSelect.addEventListener('change', async (e) => {
             const selectedFilename = e.target.value;
@@ -1524,7 +1683,7 @@
             if(!currentAppId) return;
             yamlSpinner.classList.remove('hidden');
             generateResumeBtn.disabled = true;
-            yamlStatus.textContent = 'Generating new resume version...';
+            yamlStatus.textContent = 'Generating...';
             try {
                 const modelProvider = resumeModelProviderSelect.value;
                 const result = await apiCall(`/applications/${currentAppId}/generate-resume`, 'POST', { modelProvider });
@@ -1532,9 +1691,9 @@
                 const hasFinalized = !!details.finalizedResumeYaml;
                 updateVersionSelector(result.resumeVersions, result.filename, hasFinalized);
                 updateUIWithNewResume(result.resumeYaml, false);
-                yamlStatus.textContent = `✅ ${result.message}`;
+                showStatusMessage(yamlStatus, `✅ ${result.message}`);
             } catch (error) {
-                yamlStatus.textContent = '❌ Failed to generate new resume version.';
+                showStatusMessage(yamlStatus, `Generation failed: ${error.message}`, true);
             } finally {
                 yamlSpinner.classList.add('hidden');
                 generateResumeBtn.disabled = false;
@@ -1552,17 +1711,17 @@
                 const selectedVersion = resumeVersionSelect.value;
 
                 const response = await apiCall(`/applications/${currentAppId}/finalize`, 'POST', { 
-                    resumeYaml: currentResumeYaml, // Send the original, unfiltered YAML
+                    resumeYaml: currentResumeYaml,
                     selections: selections,
                     variables: variables,
                     baseVersionFile: selectedVersion 
                 });
                 
-                finalizeStatus.textContent = `✅ ${response.message}`;
+                showStatusMessage(finalizeStatus, `✅ ${response.message}`);
                 await selectApplicationForResume(currentAppId);
 
             } catch(e) {
-                finalizeStatus.textContent = `❌ Finalizing failed: ${e.message}`;
+                showStatusMessage(finalizeStatus, `Finalizing failed: ${e.message}`, true);
                 finalizeBtn.disabled = false; 
             }
         });
@@ -1570,14 +1729,13 @@
         trackApplicationBtn.addEventListener('click', async () => {
             if (!currentAppId) return;
             trackApplicationBtn.disabled = true;
-            finalizeStatus.textContent = 'Adding to tracker...';
+            showStatusMessage(finalizeStatus, 'Adding to tracker...');
             try {
-                const trackedItem = await trackerApi.trackAppFromProject(currentAppId);
-                finalizeStatus.textContent = `✅ Added to tracker!`;
+                await trackerApi.trackAppFromProject(currentAppId);
+                showStatusMessage(finalizeStatus, `✅ Added to tracker!`);
                 await refreshAllTrackers();
             } catch (error) {
-                finalizeStatus.textContent = `❌ Failed to track application: ${error.message}`;
-                // Re-enable if it fails
+                showStatusMessage(finalizeStatus, `Tracking failed: ${error.message}`, true);
                 trackApplicationBtn.disabled = false;
             }
         });
@@ -1586,9 +1744,8 @@
         contentSelectionForm.addEventListener('input', debouncedRender);
         baseFontNameSelect.addEventListener('input', debouncedRender);
         
-        // Connect save buttons
-        saveContentConfigBtn.addEventListener('click', () => saveConfiguration(currentAppId, 'Content selection saved!'));
-        saveConfigBtn.addEventListener('click', () => saveConfiguration(currentAppId, 'Formatting configuration saved!'));
+        saveContentConfigBtn.addEventListener('click', () => saveConfiguration(currentAppId, contentConfigStatus, '✅ Content selection saved!'));
+        saveConfigBtn.addEventListener('click', () => saveConfiguration(currentAppId, configStatus, '✅ Formatting saved!'));
 
         configFileUpload.addEventListener('change', (event) => {
             const file = event.target.files[0];
@@ -1614,7 +1771,59 @@
             debouncedRender();
             fileNameDisplay.textContent = '';
             configFileUpload.value = '';
-            alert('Formatting reset.');
+            showStatusMessage(configStatus, 'Formatting reset to project default.');
+        });
+
+        // Cover Letter Listeners
+        generateCoverLetterBtn.addEventListener('click', async () => {
+            if (!currentAppId) return;
+            clSpinner.classList.remove('hidden');
+            generateCoverLetterBtn.disabled = true;
+            clGenStatus.textContent = 'Generating...';
+            try {
+                const payload = {
+                    additionalDetails: clAdditionalDetails.value.trim(),
+                    modelProvider: clModelProvider.value
+                };
+                const response = await apiCall(`/applications/${currentAppId}/generate-cover-letter`, 'POST', payload);
+                coverLetterEditor.value = response.cover_letter_body.replace(/\\n/g, '\n');
+                showStatusMessage(clGenStatus, '✅ Generation successful!');
+                
+                // Refresh PDF
+                const details = await apiCall(`/applications/${currentAppId}`);
+                if (details.coverLetter.pdfUrl) {
+                    coverLetterPdfViewer.src = `${API_BASE_URL}${details.coverLetter.pdfUrl}?t=${Date.now()}`;
+                    saveCoverLetterBtn.disabled = false;
+                    downloadCoverLetterBtn.disabled = false;
+                }
+            } catch (error) {
+                showStatusMessage(clGenStatus, `Generation failed: ${error.message}`, true);
+            } finally {
+                clSpinner.classList.add('hidden');
+                generateCoverLetterBtn.disabled = false;
+            }
+        });
+
+        saveCoverLetterBtn.addEventListener('click', async () => {
+            if (!currentAppId) return;
+            saveCoverLetterBtn.disabled = true;
+            try {
+                const payload = { coverLetterText: coverLetterEditor.value };
+                await apiCall(`/applications/${currentAppId}/save-cover-letter`, 'POST', payload);
+                showStatusMessage(clSaveStatus, '✅ Saved!');
+                // Refresh PDF
+                coverLetterPdfViewer.src = `${coverLetterPdfViewer.src.split('?')[0]}?t=${Date.now()}`;
+            } catch (error) {
+                showStatusMessage(clSaveStatus, `Save failed: ${error.message}`, true);
+            } finally {
+                saveCoverLetterBtn.disabled = false;
+            }
+        });
+
+        downloadCoverLetterBtn.addEventListener('click', () => {
+            if (coverLetterPdfViewer.src) {
+                window.open(coverLetterPdfViewer.src.split('?')[0]);
+            }
         });
         
         // Email Tab Listeners
@@ -1622,7 +1831,7 @@
             if (!currentAppId) return;
             emailSpinner.classList.remove('hidden');
             generateEmailBtn.disabled = true;
-            emailGenStatus.textContent = 'Generating email...';
+            emailGenStatus.textContent = 'Generating...';
             try {
                 const details = { recruiterName: recruiterNameInput.value.trim(), recruiterEmail: recruiterEmailInput.value.trim(), recruiterLinkedIn: recruiterLinkedInInput.value.trim(), additionalDetails: additionalDetailsInput.value.trim() };
                 const payload = { ...details, modelProvider: emailModelProviderSelect.value };
@@ -1630,11 +1839,11 @@
                 emailToInput.value = details.recruiterEmail;
                 emailSubjectInput.value = response.subject;
                 emailBodyInput.value = response.body.replace(/\\n/g, '\n');
-                emailGenStatus.textContent = '✅ Email generated & saved!';
+                showStatusMessage(emailGenStatus, '✅ Email generated & saved!');
                 trackEmailBtn.disabled = false;
                 openEmailClientBtn.disabled = false;
             } catch (error) {
-                emailGenStatus.textContent = `❌ Error: ${error.message}`;
+                showStatusMessage(emailGenStatus, `Error: ${error.message}`, true);
             } finally {
                 emailSpinner.classList.add('hidden');
                 generateEmailBtn.disabled = false;
@@ -1645,17 +1854,17 @@
             const recruiterName = recruiterNameInput.value.trim();
             const recruiterEmail = recruiterEmailInput.value.trim();
             if (!recruiterEmail) {
-                emailTrackStatus.textContent = "Recruiter email is required to track.";
+                showStatusMessage(emailTrackStatus, "Recruiter email is required.", true);
                 return;
             }
             trackEmailBtn.disabled = true;
-            emailTrackStatus.textContent = "Tracking email...";
+            showStatusMessage(emailTrackStatus, "Tracking email...");
             try {
                 await trackerApi.trackEmail(currentAppId, { recruiterName, recruiterEmail });
-                emailTrackStatus.textContent = "✅ Email tracked!";
+                showStatusMessage(emailTrackStatus, "✅ Email tracked!");
                 await refreshAllTrackers();
             } catch (error) {
-                emailTrackStatus.textContent = "❌ Tracking failed.";
+                showStatusMessage(emailTrackStatus, "❌ Tracking failed.", true);
             } finally {
                 trackEmailBtn.disabled = false;
             }

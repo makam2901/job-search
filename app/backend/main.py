@@ -20,8 +20,8 @@ from reportlab.lib.units import inch
 
 # Import modularized functions and classes
 from utils import get_app_id, APPLICATIONS_DIR, BASE_RESUME_PATH, load_variables, merge_variables
-from llm_services import agent_resume_tailor, agent_cold_email_generator
-from pdf_services import ATSResumePDFGenerator
+from llm_services import agent_resume_tailor, agent_cold_email_generator, agent_cover_letter_generator
+from pdf_services import ATSResumePDFGenerator, CoverLetterPDFGenerator
 
 # --- Load Environment Variables ---
 load_dotenv()
@@ -81,6 +81,13 @@ class EmailGenerationRequest(BaseModel):
     recruiterLinkedIn: Optional[str] = ""
     additionalDetails: Optional[str] = ""
     modelProvider: str
+
+class CoverLetterGenerationRequest(BaseModel):
+    additionalDetails: Optional[str] = ""
+    modelProvider: str
+
+class SaveCoverLetterRequest(BaseModel):
+    coverLetterText: str
 
 class TrackerApplicationItem(BaseModel):
     id: str = Field(default_factory=lambda: f"app_{uuid.uuid4().hex}")
@@ -608,6 +615,87 @@ def generate_email(app_id: str, request: EmailGenerationRequest):
         return email_content
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate email content: {e}")
+    
+# --- Cover Letter Endpoints ---
+@app.post("/applications/{app_id}/generate-cover-letter", response_model=Dict[str, str])
+def generate_cover_letter(app_id: str, request: CoverLetterGenerationRequest):
+    app_path = os.path.join(APPLICATIONS_DIR, app_id)
+    if not os.path.isdir(app_path):
+        raise HTTPException(status_code=404, detail="Application not found.")
+
+    jd_path = os.path.join(app_path, "job_description.html")
+    resume_path = os.path.join(app_path, "finalized_resume.yaml")
+
+    if not os.path.exists(jd_path): raise HTTPException(status_code=404, detail="Job description not found.")
+    if not os.path.exists(resume_path): raise HTTPException(status_code=404, detail="A finalized resume is required to generate a cover letter.")
+
+    with open(jd_path, 'r', encoding='utf-8') as f:
+        jd_text = BeautifulSoup(f.read(), 'html.parser').get_text(separator='\n', strip=True)
+    with open(resume_path, 'r', encoding='utf-8') as f:
+        resume_yaml = f.read()
+    
+    try:
+        cover_letter_str = agent_cover_letter_generator(
+            resume_yaml=resume_yaml,
+            jd_text=jd_text,
+            additional_details=request.additionalDetails,
+            model_provider=request.modelProvider
+        )
+        cover_letter_content = json.loads(cover_letter_str)
+        body = cover_letter_content.get("cover_letter_body", "")
+
+        # Save generated content and details
+        update_app_details(app_path, {
+            "coverLetterAdditionalDetails": request.additionalDetails,
+            "generatedCoverLetterBody": body
+        })
+
+        # Generate PDF
+        with open(BASE_RESUME_PATH, 'r', encoding='utf-8') as f:
+            base_resume_data = yaml.safe_load(f)
+        
+        contact_info = base_resume_data.get('contact', {})
+        variables = load_variables() # Load default formatting
+        pdf_generator = CoverLetterPDFGenerator(variables=variables)
+        pdf_path = os.path.join(app_path, "Cover_Letter.pdf")
+        pdf_generator.generate_pdf(body, contact_info, pdf_path)
+
+        return {"cover_letter_body": body}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate cover letter: {str(e)}")
+
+@app.post("/applications/{app_id}/save-cover-letter", response_model=Dict[str, str])
+def save_cover_letter(app_id: str, request: SaveCoverLetterRequest):
+    app_path = os.path.join(APPLICATIONS_DIR, app_id)
+    if not os.path.isdir(app_path):
+        raise HTTPException(status_code=404, detail="Application not found.")
+    
+    try:
+        # Save the text
+        update_app_details(app_path, {"generatedCoverLetterBody": request.coverLetterText})
+
+        # Regenerate the PDF with the updated text
+        with open(BASE_RESUME_PATH, 'r', encoding='utf-8') as f:
+            base_resume_data = yaml.safe_load(f)
+        
+        contact_info = base_resume_data.get('contact', {})
+        variables = load_variables()
+        pdf_generator = CoverLetterPDFGenerator(variables=variables)
+        pdf_path = os.path.join(app_path, "Cover_Letter.pdf")
+        pdf_generator.generate_pdf(request.coverLetterText, contact_info, pdf_path)
+        
+        return {"message": "Cover letter saved and PDF updated."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save cover letter: {str(e)}")
+
+@app.get("/applications/{app_id}/cover-letter-pdf")
+def get_cover_letter_pdf(app_id: str):
+    app_path = os.path.join(APPLICATIONS_DIR, app_id)
+    pdf_path = os.path.join(app_path, "Cover_Letter.pdf")
+    if not os.path.exists(pdf_path):
+        raise HTTPException(status_code=404, detail="Cover Letter PDF not found.")
+    return FileResponse(pdf_path, media_type='application/pdf', filename="Cover_Letter.pdf")
 
 # --- Tracker Endpoints ---
 

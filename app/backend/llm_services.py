@@ -265,3 +265,72 @@ Write an email that is professional, concise, highly personalized, and grabs the
         print(f"Error decoding JSON from LLM response: {e}")
         print(f"LLM Response was:\n{cleaned_str}")
         raise HTTPException(status_code=500, detail="Failed to get valid JSON from the email generation agent.")
+
+def agent_cover_letter_generator(resume_yaml: str, jd_text: str, additional_details: str, model_provider: str = "gemini") -> str:
+    """
+    The Cover Letter Agent. It receives a finalized resume, job description, and user notes
+    to generate a tailored cover letter.
+    """
+    prompt = f"""
+You are an expert career coach and professional writer, specializing in creating impactful cover letters that get noticed. Your task is to write a compelling, tailored cover letter based on the provided information.
+
+**Your Goal:**
+Draft a cover letter that tells a persuasive story, connecting the candidate's achievements directly to the needs outlined in the job description. The tone should be professional, confident, and genuinely enthusiastic.
+
+**Input Information:**
+1.  **Candidate's Finalized Resume (YAML format):**
+    ```yaml
+    {resume_yaml}
+    ```
+2.  **Target Job Description:**
+    ---
+    {jd_text}
+    ---
+3.  **Additional Details & Instructions from User:**
+    ---
+    {additional_details if additional_details else "None"}
+    ---
+
+**Your Task & Strict Instructions:**
+
+1.  **Analyze and Synthesize:**
+    - Thoroughly review the job description to identify the top 3-4 most critical requirements, challenges, and desired qualifications.
+    - Scrutinize the candidate's resume to find the most relevant experiences, projects, and skills that directly address these requirements.
+
+2.  **Draft the Cover Letter Body:**
+    - **Salutation:** Begin with "Dear Hiring Committee,".
+    - **Opening Paragraph:** Immediately grab the reader's attention. State the specific role you are applying for. Briefly introduce the candidate and express genuine excitement about the opportunity, perhaps mentioning something specific about the company that resonates.
+    - **Body Paragraphs (2-3 paragraphs):** This is the core of the letter.
+        - **Create a Narrative:** Do not simply list skills from the resume. Instead, build a story. Select 2-3 of the most powerful examples (from experience or projects) that align with the job's needs.
+        - **Show, Don't Tell:** For each example, briefly describe the challenge or problem, the specific action the candidate took, and the positive, quantifiable outcome. Use the resume as a source of facts but elaborate on the *impact*.
+        - **Connect to the JD:** Explicitly tie these stories back to the requirements of the job description. For example: "My work in developing a scalable ETL pipeline, which reduced data processing latency by 30%, has prepared me to tackle the data engineering challenges you've outlined."
+        - **Incorporate User Notes:** Seamlessly weave in any points from the "Additional Details" to further personalize the letter.
+    - **Closing Paragraph:** Reiterate your strong interest in the role and the company. Confidently state how your skills will benefit the team. Include a clear call to action, such as "I am eager to discuss how my background in data science and machine learning can contribute to your team's success."
+
+3.  **Formatting:**
+    - The entire output should be a single JSON object.
+    - The JSON object must contain one key: `cover_letter_body`.
+    - The value should be a single string containing the entire body of the cover letter, from the salutation to the final paragraph. Use `\\n\\n` for paragraph breaks.
+    - **DO NOT** include the sign-off (e.g., "Yours sincerely,"), the candidate's name, or contact details. This will be appended programmatically.
+
+**Example Output:**
+```json
+{{
+  "cover_letter_body": "Dear Hiring Committee,\\n\\nI am writing to express my enthusiastic interest in the Data Scientist position at TechCorp, as advertised on LinkedIn. Having followed TechCorp's innovations in machine learning, I am particularly impressed by your commitment to developing scalable AI solutions, and I am confident that my skills and experience align perfectly with the requirements of this role.\\n\\nIn my previous role at AB InBev, I led a project to automate financial reporting workflows, which involved designing and deploying robust ETL pipelines that ultimately saved the company $500,000 annually. This experience directly relates to your need for a candidate who can handle large-scale data systems and deliver measurable business impact. Furthermore, my work on the AI Fantasy Team Predictor project honed my skills in model tuning and MLOps, where I improved prediction accuracy by over 95% and deployed the system on a scalable GCP architecture—capabilities that I am excited to bring to your team.\\n\\nMy background has equipped me with a strong foundation in both the theoretical and practical aspects of data science. I am eager to discuss how my problem-solving abilities and technical expertise can help TechCorp continue to innovate. Thank you for your time and consideration.\\n\\nI look forward to hearing from you soon."
+}}
+```
+"""
+    if model_provider == "chatgpt":
+        generated_content_str = call_openrouter_api(prompt, is_json_output=True)
+    else: # Default to gemini
+        generated_content_str = call_gemini_api(prompt, is_json_output=True)
+    
+    cleaned_str = generated_content_str.replace("```json", "").replace("```", "").strip()
+    
+    try:
+        json.loads(cleaned_str)
+        return cleaned_str
+    except json.JSONDecodeError as e:
+        print(f"Error decoding JSON from LLM response: {e}")
+        print(f"LLM Response was:\n{cleaned_str}")
+        raise HTTPException(status_code=500, detail="Failed to get valid JSON from the cover letter generation agent.")
