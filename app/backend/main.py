@@ -29,7 +29,7 @@ load_dotenv()
 app = FastAPI(
     title="ApplySmart Backend",
     description="Manages job applications, renders PDFs, and generates cold emails.",
-    version="18.4.0" # Version bump for robust finalization logic
+    version="18.5.0" # Version bump for robust finalization logic
 )
 
 # --- CORS Middleware ---
@@ -257,9 +257,6 @@ def get_application_details(app_id: str):
 
     resume_versions = get_resume_versions(app_path)
     
-    # **MODIFIED LOGIC**
-    # Determine which file to load as the main `resumeYaml` (the full version for comparison).
-    # If a version has been finalized, use the stored base version. Otherwise, use the latest generated version.
     finalized_base_version = details.get("finalizedBaseVersion")
     if finalized_base_version and os.path.exists(os.path.join(app_path, finalized_base_version)):
         base_version_file = finalized_base_version
@@ -296,7 +293,7 @@ def get_application_details(app_id: str):
         "jobId": details.get("jobId"),
         "jobLink": details.get("jobLink"),
         "jobDescription": jd_content, 
-        "resumeYaml": yaml_content, # This is now correctly the full version for comparison
+        "resumeYaml": yaml_content,
         "finalizedResumeYaml": finalized_yaml_content,
         "customVariables": custom_vars, 
         "resumeVersions": resume_versions,
@@ -432,44 +429,63 @@ def render_pdf(app_id: str, data: RenderRequestData):
 
 @app.post("/applications/{app_id}/finalize", response_model=Dict[str, str])
 def finalize_resume(app_id: str, request: FinalizeRequest):
+    """
+    Finalizes the resume. It takes the full content from a specific resume version,
+    applies any user selections and formatting overrides, saves the result to
+    finalized_resume.yaml, and generates the definitive PDF.
+    """
     app_path = os.path.join(APPLICATIONS_DIR, app_id)
     if not os.path.isdir(app_path):
         raise HTTPException(status_code=404, detail="Application not found.")
 
+    # 1. Load the user's selected resume content from the request
     try:
-        resume_data = yaml.safe_load(request.resumeYaml)
-        if 'name' not in resume_data:
+        final_resume_data = yaml.safe_load(request.resumeYaml)
+        if 'name' not in final_resume_data:
             raise HTTPException(status_code=400, detail="Resume data must contain a 'name' field.")
     except yaml.YAMLError:
-        raise HTTPException(status_code=400, detail="Invalid YAML format in resume data.")
+        raise HTTPException(status_code=400, detail="Invalid YAML format in request resume data.")
 
+    # 2. Save the final YAML content
     final_yaml_path = os.path.join(app_path, "finalized_resume.yaml")
     with open(final_yaml_path, 'w', encoding='utf-8') as f:
-        yaml.dump(resume_data, f, sort_keys=False, allow_unicode=True)
+        yaml.dump(final_resume_data, f, sort_keys=False, allow_unicode=True)
 
-    pdf_generator = ATSResumePDFGenerator(variables=request.variables)
-    dummy_doc = SimpleDocTemplate(os.path.join(app_path, "dummy.pdf"), pagesize=letter, rightMargin=0.4*inch, leftMargin=0.4*inch, topMargin=0.4*inch, bottomMargin=0.4*inch)
-    trimmed_resume_data = pdf_generator.preprocess_data_for_fitting(resume_data, dummy_doc.width)
-    
-    safe_name = "".join(c if c.isalnum() else '_' for c in resume_data['name'])
-    final_pdf_name = f"Resume_{safe_name}.pdf"
-    final_pdf_path = os.path.join(app_path, final_pdf_name)
-
+    # 3. Generate the final PDF from this saved data
     try:
+        pdf_generator = ATSResumePDFGenerator(variables=request.variables)
+        
+        # Create a dummy doc to get the correct width for preprocessing
+        dummy_doc = SimpleDocTemplate(os.path.join(app_path, "dummy_for_width.pdf"), pagesize=letter, rightMargin=0.4*inch, leftMargin=0.4*inch, topMargin=0.4*inch, bottomMargin=0.4*inch)
+        
+        # Pre-process the data to trim any skill lines that are too long
+        trimmed_resume_data = pdf_generator.preprocess_data_for_fitting(final_resume_data, dummy_doc.width)
+
+        safe_name = "".join(c if c.isalnum() else '_' for c in final_resume_data.get('name', ''))
+        final_pdf_name = f"Resume_{safe_name}.pdf"
+        final_pdf_path = os.path.join(app_path, final_pdf_name)
+
+        # Generate the PDF
         pdf_generator.generate_pdf_from_data(trimmed_resume_data, final_pdf_path)
-        # **MODIFIED:** Save the base version filename along with the safe name
+
+        # 4. Update application details to track the finalized state
         update_app_details(app_path, {
             "name": safe_name,
+            # We store the *source* of the finalization, which is the version the user was looking at.
             "finalizedBaseVersion": request.baseVersionFile
         })
         
-        if os.path.exists(os.path.join(app_path, "dummy.pdf")):
-            os.remove(os.path.join(app_path, "dummy.pdf"))
-        
+        # Clean up the dummy file
+        if os.path.exists(dummy_doc.filepath):
+            os.remove(dummy_doc.filepath)
+            
         return {"message": f"Successfully finalized resume as {final_pdf_name}."}
+        
     except Exception as e:
-        if os.path.exists(os.path.join(app_path, "dummy.pdf")):
-            os.remove(os.path.join(app_path, "dummy.pdf"))
+        # Clean up dummy file on error too
+        dummy_path = os.path.join(app_path, "dummy_for_width.pdf")
+        if os.path.exists(dummy_path):
+            os.remove(dummy_path)
         raise HTTPException(status_code=500, detail=f"Failed to generate final PDF: {str(e)}")
 
 
@@ -567,22 +583,19 @@ def track_application(app_id: str):
     jobId = details.get("jobId", "")
     jobLink = details.get("jobLink", "")
 
-    # Find existing item
     existing_item_index = -1
-    if jobId and jobId.strip(): # Primary check: non-empty Job ID
+    if jobId and jobId.strip():
         existing_item_index = next((i for i, item in enumerate(apps) if item.get("jobId") == jobId), -1)
     
-    if existing_item_index == -1: # Fallback check: company and role
+    if existing_item_index == -1:
         existing_item_index = next((i for i, item in enumerate(apps) if item.get("company") == company and item.get("role") == role), -1)
 
     if existing_item_index != -1:
-        # Update existing item
         apps[existing_item_index]["jobLink"] = jobLink
-        apps[existing_item_index]["jobId"] = jobId # Ensure Job ID is updated if it was missing
+        apps[existing_item_index]["jobId"] = jobId
         write_tracker_data(TRACKER_APPS_PATH, apps)
         return apps[existing_item_index]
     else:
-        # Create new item
         new_app_item = TrackerApplicationItem(
             company=company,
             role=role,
@@ -610,7 +623,6 @@ def add_tracker_application(item: TrackerApplicationItem):
         existing_item_index = next((i for i, app in enumerate(apps) if app.get("company") == item.company and app.get("role") == item.role), -1)
 
     if existing_item_index != -1:
-        # Update existing item
         original_id = apps[existing_item_index]['id']
         original_createdAt = apps[existing_item_index].get('createdAt')
         
@@ -625,7 +637,6 @@ def add_tracker_application(item: TrackerApplicationItem):
         write_tracker_data(TRACKER_APPS_PATH, apps)
         return updated_data
     else:
-        # Add new item
         apps.insert(0, item.dict())
         write_tracker_data(TRACKER_APPS_PATH, apps)
         return item
@@ -685,7 +696,6 @@ def track_email(app_id: str, request: TrackEmailRequest):
         existing_item_index = next((i for i, item in enumerate(emails) if item.get("company") == company and item.get("role") == role), -1)
 
     if existing_item_index != -1:
-        # Update existing item
         emails[existing_item_index]["recruiter"] = request.recruiterName
         emails[existing_item_index]["contact"] = request.recruiterEmail
         emails[existing_item_index]["jobLink"] = jobLink
@@ -694,7 +704,6 @@ def track_email(app_id: str, request: TrackEmailRequest):
         write_tracker_data(TRACKER_EMAILS_PATH, emails)
         return emails[existing_item_index]
     else:
-        # Create new item
         new_email_item = TrackerEmailItem(
             company=company,
             role=role,

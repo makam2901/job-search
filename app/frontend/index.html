@@ -1523,32 +1523,37 @@
         });
         finalizeBtn.addEventListener('click', async () => {
             if (!currentAppId || !currentResumeYaml) return;
+            
             finalizeBtn.disabled = true;
             finalizeStatus.textContent = 'Finalizing...';
+            
             try {
-                const filteredResumeData = getFilteredResumeData();
+                // This function now correctly gets the filtered data based on checkboxes
+                const filteredResumeData = getFilteredResumeData(); 
+                
+                // Get the formatting variables from the form
                 const variables = getVariablesFromForm();
-                const response = await apiCall(`/applications/${currentAppId}/finalize`, 'POST', { resumeYaml: jsyaml.dump(filteredResumeData), variables: variables });
+                
+                // Get the currently selected version filename to send to the backend
+                const selectedVersion = resumeVersionSelect.value;
+
+                const response = await apiCall(`/applications/${currentAppId}/finalize`, 'POST', { 
+                    resumeYaml: jsyaml.dump(filteredResumeData), 
+                    variables: variables,
+                    // We tell the backend which version this finalization was based on
+                    baseVersionFile: selectedVersion 
+                });
+                
                 finalizeStatus.textContent = `✅ ${response.message}`;
+                
+                // This is a key step: after finalizing, we reload the application
+                // view. The backend will now serve the finalized version by default.
                 await selectApplicationForResume(currentAppId);
+
             } catch(e) {
                 finalizeStatus.textContent = '❌ Finalizing failed.';
-            } finally {
-                // The button will be re-enabled or disabled correctly by selectApplicationForResume
-            }
-        });
-        trackApplicationBtn.addEventListener('click', async () => {
-            if (!currentAppId) return;
-            trackApplicationBtn.disabled = true;
-            finalizeStatus.textContent = 'Tracking...';
-            try {
-                await trackerApi.trackAppFromProject(currentAppId);
-                finalizeStatus.textContent = '✅ Application tracked!';
-                await refreshAllTrackers();
-            } catch(e) {
-                finalizeStatus.textContent = '❌ Tracking failed.';
-            } finally {
-                trackApplicationBtn.disabled = false;
+                // Re-enable the button if it fails
+                finalizeBtn.disabled = false; 
             }
         });
         formattingForm.addEventListener('input', debouncedRender);
