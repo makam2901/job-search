@@ -3,6 +3,7 @@ import yaml
 import re
 import json
 import uuid
+import copy
 from datetime import datetime
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
@@ -29,7 +30,7 @@ load_dotenv()
 app = FastAPI(
     title="ApplySmart Backend",
     description="Manages job applications, renders PDFs, and generates cold emails.",
-    version="18.5.0" # Version bump for robust finalization logic
+    version="18.6.0" # Version bump for robust finalization logic
 )
 
 # --- CORS Middleware ---
@@ -64,8 +65,9 @@ class SaveVariablesRequest(BaseModel):
 
 class FinalizeRequest(BaseModel):
     resumeYaml: str
+    selections: Dict[str, Any]
     variables: Dict[str, Any]
-    baseVersionFile: str # The filename of the version being finalized
+    baseVersionFile: str
 
 class EmailDetails(BaseModel):
     recruiterName: Optional[str] = ""
@@ -179,6 +181,47 @@ def write_tracker_data(path: str, data: List[Dict]):
     """Writes tracker data to a JSON file."""
     with open(path, 'w') as f:
         json.dump(data, f, indent=2)
+
+def filter_resume_data(data: Dict, selections: Dict) -> Dict:
+    """Applies user selections from the frontend to filter resume data."""
+    filtered_data = copy.deepcopy(data)
+
+    # Handle contact info selections from dropdowns
+    if 'contact' in filtered_data:
+        if 'contact-email' in selections:
+            filtered_data['contact']['email'] = selections['contact-email']
+        if 'contact-location' in selections:
+            filtered_data['contact']['location'] = selections['contact-location']
+
+    # Handle section-level and item-level filtering based on checkboxes
+    sections_to_process = ['summary', 'skills', 'education', 'experience', 'projects', 'certifications']
+    for section_key in sections_to_process:
+        if section_key not in filtered_data:
+            continue
+
+        # Check if the whole section is deselected via its main checkbox
+        # The key from the frontend is formatted as 'select-summary', 'select-skills', etc.
+        if not selections.get(f'select-{section_key}', True):
+            del filtered_data[section_key]
+            continue
+
+        # If the section is a list (like experience, projects), filter individual items
+        if isinstance(filtered_data.get(section_key), list):
+            filtered_items = []
+            # Iterate over the original data to match indices with selection keys
+            for i, item in enumerate(data[section_key]):
+                # The key for an item is 'select-experience-0', 'select-experience-1', etc.
+                item_key = f'select-{section_key}-{i}'
+                if selections.get(item_key, True): # Default to True if key is missing
+                    filtered_items.append(item)
+            
+            if not filtered_items:
+                 # If all items are deselected, remove the whole section
+                 del filtered_data[section_key]
+            else:
+                filtered_data[section_key] = filtered_items
+
+    return filtered_data
 
 
 # --- API Endpoints ---
@@ -431,58 +474,60 @@ def render_pdf(app_id: str, data: RenderRequestData):
 def finalize_resume(app_id: str, request: FinalizeRequest):
     """
     Finalizes the resume. It takes the full content from a specific resume version,
-    applies any user selections and formatting overrides, saves the result to
-    finalized_resume.yaml, and generates the definitive PDF.
+    applies user selections and formatting overrides from the request, saves the
+    result to finalized_resume.yaml, and generates the definitive PDF.
     """
     app_path = os.path.join(APPLICATIONS_DIR, app_id)
     if not os.path.isdir(app_path):
         raise HTTPException(status_code=404, detail="Application not found.")
 
-    # 1. Load the user's selected resume content from the request
+    # 1. Load the original resume content from the request
     try:
-        final_resume_data = yaml.safe_load(request.resumeYaml)
-        if 'name' not in final_resume_data:
-            raise HTTPException(status_code=400, detail="Resume data must contain a 'name' field.")
+        original_data = yaml.safe_load(request.resumeYaml)
     except yaml.YAMLError:
         raise HTTPException(status_code=400, detail="Invalid YAML format in request resume data.")
 
-    # 2. Save the final YAML content
+    # 2. Apply selections from the request to filter the data
+    final_resume_data = filter_resume_data(original_data, request.selections)
+    
+    # Ensure the 'name' field is always present in the final data
+    if 'name' not in final_resume_data:
+        if 'name' in original_data:
+            final_resume_data['name'] = original_data['name']
+        else:
+            raise HTTPException(status_code=400, detail="Resume data must contain a 'name' field.")
+
+    # 3. Save the final, filtered YAML content
     final_yaml_path = os.path.join(app_path, "finalized_resume.yaml")
     with open(final_yaml_path, 'w', encoding='utf-8') as f:
         yaml.dump(final_resume_data, f, sort_keys=False, allow_unicode=True)
 
-    # 3. Generate the final PDF from this saved data
+    # 4. Generate the final PDF from the filtered data
     try:
         pdf_generator = ATSResumePDFGenerator(variables=request.variables)
         
-        # Create a dummy doc to get the correct width for preprocessing
         dummy_doc = SimpleDocTemplate(os.path.join(app_path, "dummy_for_width.pdf"), pagesize=letter, rightMargin=0.4*inch, leftMargin=0.4*inch, topMargin=0.4*inch, bottomMargin=0.4*inch)
         
-        # Pre-process the data to trim any skill lines that are too long
         trimmed_resume_data = pdf_generator.preprocess_data_for_fitting(final_resume_data, dummy_doc.width)
 
         safe_name = "".join(c if c.isalnum() else '_' for c in final_resume_data.get('name', ''))
         final_pdf_name = f"Resume_{safe_name}.pdf"
         final_pdf_path = os.path.join(app_path, final_pdf_name)
 
-        # Generate the PDF
         pdf_generator.generate_pdf_from_data(trimmed_resume_data, final_pdf_path)
 
-        # 4. Update application details to track the finalized state
+        # 5. Update application details to track the finalized state
         update_app_details(app_path, {
             "name": safe_name,
-            # We store the *source* of the finalization, which is the version the user was looking at.
             "finalizedBaseVersion": request.baseVersionFile
         })
         
-        # Clean up the dummy file
-        if os.path.exists(dummy_doc.filepath):
-            os.remove(dummy_doc.filepath)
-            
+        if os.path.exists(dummy_doc.filename):
+            os.remove(dummy_doc.filename)
+
         return {"message": f"Successfully finalized resume as {final_pdf_name}."}
         
     except Exception as e:
-        # Clean up dummy file on error too
         dummy_path = os.path.join(app_path, "dummy_for_width.pdf")
         if os.path.exists(dummy_path):
             os.remove(dummy_path)

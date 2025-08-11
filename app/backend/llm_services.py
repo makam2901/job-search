@@ -134,7 +134,7 @@ Generate a JSON structure containing ONLY the following keys: `summary`, `skills
     - For majority bullets, you must first articulate the business **problem** or **challenge**, then the **action** taken, and finally the **quantifiable result**.
     - **INVENT QUANTIFIABLE METRICS.** For majority bullets **MUST** include a plausible, impactful metric. Invent realistic ones if not provided. Examples: "reduced latency by 30%", "processed 500GB of data", "increased user engagement by 15%", "saved $50,000 in operational costs".
     - Word Count: make the entire line is 135 characters. strict.
-    - **Strategic Bolding**: Identify the most critical parts of each bullet points based on the bullet itself and the job description. Wrap these keywords in `<b>...</b>` tags. Use this sparingly—aim for 1-3 bolded phrases per bullet to maximize impact without cluttering the text.
+    - **Strategic Bolding**: Identify the most critical parts of each bullet points based on the bullet itself and the job description. Wrap these keywords in `<b>...</b>` tags. Use this sparingly—aim for 1-3 bolded phrases per bullet to maximize impact without cluttering the text. Dont focus on the reseults always. Highlighting actions are also important.
     - Number of Bullets:
         - DRINKS: 4 points
         - AB INBEV: 8 points
@@ -147,6 +147,7 @@ Generate a JSON structure containing ONLY the following keys: `summary`, `skills
     - Each bullet must be under 140 characters.
     - Use strategic `<b>...</b>` bolding.
     - Only 2 bullets per project.
+    - **You MUST process and return ALL projects** provided in the candidate's base information.
     - Reorder the projects based on the relevance of generated bullets to the job description.
 
 **Output Format & Example:**

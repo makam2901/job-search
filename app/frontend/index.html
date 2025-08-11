@@ -1059,7 +1059,7 @@
                 const input = document.createElement('input');
                 input.type = 'checkbox';
                 input.id = `select-${name}`;
-                input.name = name;
+                input.name = `select-${name}`; // Standardized name format
                 input.checked = checked;
                 input.className = 'h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500';
                 const label = document.createElement('label');
@@ -1099,14 +1099,14 @@
             const sections = ['summary', 'skills', 'education', 'experience', 'projects', 'certifications'];
             sections.forEach(sectionKey => {
                 if (!originalData[sectionKey]) return;
-                const sectionCheckbox = contentSelectionForm.querySelector(`input[name="${sectionKey}"]`);
+                const sectionCheckbox = contentSelectionForm.querySelector(`input[name="select-${sectionKey}"]`);
                 if (sectionCheckbox && !sectionCheckbox.checked) {
                     delete filteredData[sectionKey];
                     return;
                 }
                 if (Array.isArray(originalData[sectionKey])) {
                     filteredData[sectionKey] = originalData[sectionKey].filter((_, index) => {
-                        const itemCheckbox = contentSelectionForm.querySelector(`input[name="${sectionKey}-${index}"]`);
+                        const itemCheckbox = contentSelectionForm.querySelector(`input[name="select-${sectionKey}-${index}"]`);
                         return !itemCheckbox || itemCheckbox.checked;
                     });
                     if (filteredData[sectionKey].length === 0) delete filteredData[sectionKey];
@@ -1114,11 +1114,31 @@
             });
             return filteredData;
         }
+
+        function getContentSelectionState() {
+            const selections = {};
+            const inputs = contentSelectionForm.querySelectorAll('input[type="checkbox"], select');
+            inputs.forEach(input => {
+                const key = input.name;
+                if (input.type === 'checkbox') {
+                    selections[key] = input.checked;
+                } else {
+                    selections[key] = input.value;
+                }
+            });
+            return selections;
+        }
         
         async function renderPdf() {
             if (!currentAppId || !currentResumeYaml) return;
-            const filteredResumeData = getFilteredResumeData();
-            if (Object.keys(filteredResumeData).filter(k => k !== 'name' && k !== 'contact').length === 0) { 
+            
+            const isFinalizedView = resumeVersionSelect.value === 'finalized';
+            
+            const resumeDataToRender = isFinalizedView 
+                ? jsyaml.load(currentResumeYaml) 
+                : getFilteredResumeData();
+
+            if (Object.keys(resumeDataToRender).filter(k => k !== 'name' && k !== 'contact').length === 0) { 
                  pdfViewer.src = 'about:blank';
                  outputSection.style.visibility = 'hidden';
                  formattingContent.classList.add('hidden'); 
@@ -1127,7 +1147,7 @@
             const variables = getVariablesFromForm();
             try {
                 const pdfBlob = await apiCall(`/applications/${currentAppId}/render-pdf`, 'POST', {
-                    resumeYaml: jsyaml.dump(filteredResumeData),
+                    resumeYaml: jsyaml.dump(resumeDataToRender),
                     variables: variables
                 }, true);
                 pdfViewer.src = URL.createObjectURL(pdfBlob);
@@ -1141,7 +1161,7 @@
             const hasContent = !!resumeYaml;
 
             finalizeBtn.disabled = isFinalized || !hasContent;
-            trackApplicationBtn.disabled = !hasContent;
+            trackApplicationBtn.disabled = !isFinalized; // FIX: Only enable tracking if finalized
             
             if (hasContent) {
                 const dataForForm = isFinalized ? originalForFinalizedView : jsyaml.load(resumeYaml);
@@ -1188,13 +1208,13 @@
             allInputs.forEach(input => input.disabled = true);
 
             Object.keys(fullData).forEach(sectionKey => {
-                const sectionCheckbox = contentSelectionForm.querySelector(`input[name="${sectionKey}"]`);
+                const sectionCheckbox = contentSelectionForm.querySelector(`input[name="select-${sectionKey}"]`);
                 let hasVisibleChildren = false;
 
                 if (Array.isArray(fullData[sectionKey])) {
                     fullData[sectionKey].forEach((item, index) => {
                         const itemKey = `${sectionKey}-${createKey(item, sectionKey)}`;
-                        const itemCheckbox = contentSelectionForm.querySelector(`input[name="${sectionKey}-${index}"]`);
+                        const itemCheckbox = contentSelectionForm.querySelector(`input[name="select-${sectionKey}-${index}"]`);
                         if (itemCheckbox) {
                             if (finalizedKeys.has(itemKey)) {
                                 itemCheckbox.checked = true;
@@ -1289,7 +1309,6 @@
                 if (isFinalized) {
                     versionToLoad = 'finalized';
                     yamlToLoad = details.finalizedResumeYaml;
-                    // **FIX:** Use the latest *tailored* resume as the base for comparison, not the finalized one.
                     const originalForFinalizedView = details.resumeYaml ? jsyaml.load(details.resumeYaml) : jsyaml.load(yamlToLoad);
                     updateUIWithNewResume(yamlToLoad, true, originalForFinalizedView);
                 } else {
@@ -1528,34 +1547,41 @@
             finalizeStatus.textContent = 'Finalizing...';
             
             try {
-                // This function now correctly gets the filtered data based on checkboxes
-                const filteredResumeData = getFilteredResumeData(); 
-                
-                // Get the formatting variables from the form
+                const selections = getContentSelectionState();
                 const variables = getVariablesFromForm();
-                
-                // Get the currently selected version filename to send to the backend
                 const selectedVersion = resumeVersionSelect.value;
 
                 const response = await apiCall(`/applications/${currentAppId}/finalize`, 'POST', { 
-                    resumeYaml: jsyaml.dump(filteredResumeData), 
+                    resumeYaml: currentResumeYaml, // Send the original, unfiltered YAML
+                    selections: selections,
                     variables: variables,
-                    // We tell the backend which version this finalization was based on
                     baseVersionFile: selectedVersion 
                 });
                 
                 finalizeStatus.textContent = `✅ ${response.message}`;
-                
-                // This is a key step: after finalizing, we reload the application
-                // view. The backend will now serve the finalized version by default.
                 await selectApplicationForResume(currentAppId);
 
             } catch(e) {
-                finalizeStatus.textContent = '❌ Finalizing failed.';
-                // Re-enable the button if it fails
+                finalizeStatus.textContent = `❌ Finalizing failed: ${e.message}`;
                 finalizeBtn.disabled = false; 
             }
         });
+
+        trackApplicationBtn.addEventListener('click', async () => {
+            if (!currentAppId) return;
+            trackApplicationBtn.disabled = true;
+            finalizeStatus.textContent = 'Adding to tracker...';
+            try {
+                const trackedItem = await trackerApi.trackAppFromProject(currentAppId);
+                finalizeStatus.textContent = `✅ Added to tracker!`;
+                await refreshAllTrackers();
+            } catch (error) {
+                finalizeStatus.textContent = `❌ Failed to track application: ${error.message}`;
+                // Re-enable if it fails
+                trackApplicationBtn.disabled = false;
+            }
+        });
+
         formattingForm.addEventListener('input', debouncedRender);
         contentSelectionForm.addEventListener('input', debouncedRender);
         baseFontNameSelect.addEventListener('input', debouncedRender);
