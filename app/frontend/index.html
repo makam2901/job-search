@@ -260,23 +260,32 @@
             </div>
 
             <!-- Cover Letter Tab Content -->
-            <div id="coverLetterContent" class="tab-content h-full overflow-hidden hidden">
+            <div id="coverLetterContent" class="tab-content h-full overflow-hidden">
                 <div id="coverLetterWelcomeView" class="text-center flex flex-col items-center justify-center h-full">
                     <h2 class="text-3xl font-bold mb-2">Cover Letter Generator</h2>
                     <p class="text-gray-600 max-w-md">Select a finalized application from the list on the left to create a tailored cover letter.</p>
                 </div>
                 <div id="coverLetterWorkspace" class="h-full grid grid-cols-12 gap-6 p-6 bg-gray-100 hidden">
-                    <!-- Middle Pane -->
+                    
+                    <!-- Left Pane (Projects) -->
+                    <div class="col-span-12 lg:col-span-3 bg-white p-6 rounded-lg shadow-md overflow-y-auto custom-scrollbar">
+                        <h3 class="text-xl font-semibold mb-4 border-b pb-3">Relevant Projects</h3>
+                        <div id="clProjectsList" class="space-y-4 mt-4">
+                            <!-- Projects will be dynamically inserted here -->
+                        </div>
+                    </div>
+
+                    <!-- Middle Pane (Inputs) -->
                     <div class="col-span-12 lg:col-span-5 bg-white p-6 rounded-lg shadow-md overflow-y-auto custom-scrollbar">
                         <h2 id="coverLetterWorkspaceTitle" class="text-2xl font-bold mb-4"></h2>
-                        <div class="space-y-4">
+                        <div class="space-y-6">
                             <div>
                                 <label for="clJobDescription" class="block text-sm font-medium text-gray-700">Job Description</label>
-                                <div id="clJobDescription" class="mt-1 w-full p-2 border border-gray-200 rounded-md bg-gray-50 h-40 overflow-y-auto"></div>
+                                <div id="clJobDescription" class="mt-1 w-full p-3 border border-gray-200 rounded-md bg-gray-50 h-48 overflow-y-auto custom-scrollbar"></div>
                             </div>
                             <div>
                                 <label for="clAdditionalDetails" class="block text-sm font-medium text-gray-700">Additional Details / Notes for AI</label>
-                                <textarea id="clAdditionalDetails" rows="5" class="mt-1 w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., Emphasize my experience with cloud platforms."></textarea>
+                                <textarea id="clAdditionalDetails" rows="6" class="mt-1 w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., Emphasize my experience with cloud platforms."></textarea>
                             </div>
                             <div class="border-t pt-4 space-y-4">
                                 <div>
@@ -296,19 +305,20 @@
                             </div>
                         </div>
                     </div>
-                    <!-- Right Pane -->
-                    <div class="col-span-12 lg:col-span-7 bg-white p-6 rounded-lg shadow-md flex flex-col">
+
+                    <!-- Right Pane (Preview) -->
+                    <div class="col-span-12 lg:col-span-4 bg-white p-6 rounded-lg shadow-md flex flex-col">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="text-xl font-semibold">Cover Letter Preview</h3>
                             <div class="flex items-center space-x-2">
-                                <button id="saveCoverLetterBtn" class="bg-blue-600 text-white font-semibold py-2 px-3 rounded-lg hover:bg-blue-700 app-button" disabled>Save Text</button>
-                                <button id="downloadCoverLetterBtn" class="bg-gray-600 text-white font-semibold py-2 px-3 rounded-lg hover:bg-gray-700 app-button" disabled>Download PDF</button>
+                                <button id="saveCoverLetterBtn" class="bg-blue-600 text-white font-semibold py-2 px-3 rounded-lg hover:bg-blue-700 app-button" disabled>Save</button>
+                                <button id="downloadCoverLetterBtn" class="bg-gray-600 text-white font-semibold py-2 px-3 rounded-lg hover:bg-gray-700 app-button" disabled>PDF</button>
                                 <p id="clSaveStatus" class="text-sm text-gray-600 h-5"></p>
                             </div>
                         </div>
-                        <div class="flex-grow grid grid-cols-2 gap-4 overflow-hidden">
-                            <textarea id="coverLetterEditor" class="w-full h-full border border-gray-200 rounded-md p-3 focus:ring-blue-500 focus:border-blue-500 custom-scrollbar" placeholder="Generated cover letter text will appear here..."></textarea>
-                            <div id="coverLetterPdfViewerContainer" class="w-full h-full border border-gray-300 rounded-lg bg-gray-200">
+                        <div class="flex-grow flex flex-col gap-4 overflow-hidden">
+                            <textarea id="coverLetterEditor" class="w-full h-1/2 border border-gray-200 rounded-md p-3 focus:ring-blue-500 focus:border-blue-500 custom-scrollbar" placeholder="Generated cover letter text will appear here..."></textarea>
+                            <div id="coverLetterPdfViewerContainer" class="w-full h-1/2 border border-gray-300 rounded-lg bg-gray-200">
                                 <iframe id="coverLetterPdfViewer" class="w-full h-full" frameborder="0"></iframe>
                             </div>
                         </div>
@@ -646,6 +656,7 @@
         const coverLetterWelcomeView = document.getElementById('coverLetterWelcomeView');
         const coverLetterWorkspace = document.getElementById('coverLetterWorkspace');
         const coverLetterWorkspaceTitle = document.getElementById('coverLetterWorkspaceTitle');
+        const clProjectsList = document.getElementById('clProjectsList');
         const clJobDescription = document.getElementById('clJobDescription');
         const clAdditionalDetails = document.getElementById('clAdditionalDetails');
         const clModelProvider = document.getElementById('clModelProvider');
@@ -1444,6 +1455,7 @@
             clAdditionalDetails.value = '';
             coverLetterEditor.value = '';
             coverLetterPdfViewer.src = 'about:blank';
+            clProjectsList.innerHTML = '';
             generateCoverLetterBtn.disabled = true;
             saveCoverLetterBtn.disabled = true;
             downloadCoverLetterBtn.disabled = true;
@@ -1463,14 +1475,27 @@
                     coverLetterEditor.value = (details.coverLetter.generatedBody || '').replace(/\\n/g, '\n');
                 }
 
+                // Populate projects and enable button
                 if (details.finalizedResumeYaml) {
                     generateCoverLetterBtn.disabled = false;
+                    const resumeData = jsyaml.load(details.finalizedResumeYaml);
+                    if (resumeData.projects && resumeData.projects.length > 0) {
+                        clProjectsList.innerHTML = resumeData.projects.map(project => `
+                            <div class="p-3 border border-gray-200 rounded-lg bg-gray-50">
+                                <p class="font-semibold text-sm text-gray-800">${project.title}</p>
+                                ${project.bullets ? `<ul class="list-disc list-inside text-xs text-gray-600 mt-1 space-y-1">${project.bullets.map(b => `<li>${b.replace(/<b>|<\/b>/g, '')}</li>`).join('')}</ul>` : ''}
+                            </div>
+                        `).join('');
+                    } else {
+                        clProjectsList.innerHTML = '<p class="text-sm text-gray-500">No projects found in the finalized resume.</p>';
+                    }
                 } else {
                     clGenStatus.textContent = '⚠️ Please finalize a resume first.';
+                    clProjectsList.innerHTML = '<p class="text-sm text-gray-500">Finalize a resume to see projects.</p>';
                 }
 
                 if (details.coverLetter && details.coverLetter.pdfUrl) {
-                    coverLetterPdfViewer.src = `${API_BASE_URL}${details.coverLetter.pdfUrl}`;
+                    coverLetterPdfViewer.src = `${API_BASE_URL}${details.coverLetter.pdfUrl}?t=${Date.now()}`;
                     saveCoverLetterBtn.disabled = false;
                     downloadCoverLetterBtn.disabled = false;
                 }
