@@ -135,9 +135,12 @@
                                     <input type="url" id="jobLink" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
                                 </div>
                             </div>
-                            <button id="createApplicationBtn" class="mt-4 bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 transition duration-300 app-button">
-                                Create & Continue
-                            </button>
+                            <div class="flex items-center mt-4">
+                                <button id="createApplicationBtn" class="bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 transition duration-300 app-button">
+                                    Create & Continue
+                                </button>
+                                <p id="createAppStatus" class="ml-4 text-sm text-gray-600 h-5"></p>
+                            </div>
                         </div>
                     </div>
 
@@ -604,6 +607,7 @@
         const jobIdInput = document.getElementById('jobId');
         const jobLinkInput = document.getElementById('jobLink');
         const createApplicationBtn = document.getElementById('createApplicationBtn');
+        const createAppStatus = document.getElementById('createAppStatus');
         const workspace = document.getElementById('workspace');
         const workspaceTitle = document.getElementById('workspaceTitle');
         const applicationList = document.getElementById('applicationList');
@@ -1615,21 +1619,29 @@
         // Resume Project Creation/Selection
         newApplicationBtn.addEventListener('click', () => {
             currentAppId = null;
-            welcomeView.classList.remove('hidden');
-            applicationView.classList.add('hidden');
+            // Hide welcome, show the main application view
+            welcomeView.classList.add('hidden');
+            applicationView.classList.remove('hidden');
+
+            // Inside application view, show the form and hide the workspace
             newAppForm.classList.remove('hidden');
+            workspace.classList.add('hidden');
+
+            // Reset form fields and focus
             companyNameInput.value = '';
             roleTitleInput.value = '';
             jobIdInput.value = '';
             jobLinkInput.value = '';
             companyNameInput.focus();
+
+            // Deselect any active application in the list
             renderApplicationList(allApplications);
         });
         createApplicationBtn.addEventListener('click', async () => {
             const company = companyNameInput.value.trim();
             const role = roleTitleInput.value.trim();
             if (!company || !role) {
-                showStatusMessage(createApplicationBtn.nextElementSibling, 'Company and Role are required.', true);
+                showStatusMessage(createAppStatus, 'Company and Role are required.', true);
                 return;
             }
             createApplicationBtn.disabled = true;
@@ -1639,6 +1651,7 @@
                 const newApp = { appId: data.appId, company: company, role: role, createdAt: Date.now() / 1000 };
                 allApplications.unshift(newApp);
                 handleAppSelection(data.appId);
+                showStatusMessage(createAppStatus, ''); // Clear status on success
             } finally {
                 createApplicationBtn.disabled = false;
             }
@@ -1790,12 +1803,10 @@
                 showStatusMessage(clGenStatus, '✅ Generation successful!');
                 
                 // Refresh PDF
-                const details = await apiCall(`/applications/${currentAppId}`);
-                if (details.coverLetter.pdfUrl) {
-                    coverLetterPdfViewer.src = `${API_BASE_URL}${details.coverLetter.pdfUrl}?t=${Date.now()}`;
-                    saveCoverLetterBtn.disabled = false;
-                    downloadCoverLetterBtn.disabled = false;
-                }
+                coverLetterPdfViewer.src = `${API_BASE_URL}/applications/${currentAppId}/cover-letter-pdf?t=${Date.now()}`;
+                saveCoverLetterBtn.disabled = false;
+                downloadCoverLetterBtn.disabled = false;
+
             } catch (error) {
                 showStatusMessage(clGenStatus, `Generation failed: ${error.message}`, true);
             } finally {
@@ -1821,7 +1832,7 @@
         });
 
         downloadCoverLetterBtn.addEventListener('click', () => {
-            if (coverLetterPdfViewer.src) {
+            if (coverLetterPdfViewer.src && !coverLetterPdfViewer.src.startsWith('about:blank')) {
                 window.open(coverLetterPdfViewer.src.split('?')[0]);
             }
         });

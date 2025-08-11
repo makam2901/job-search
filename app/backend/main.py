@@ -30,7 +30,7 @@ load_dotenv()
 app = FastAPI(
     title="ApplySmart Backend",
     description="Manages job applications, renders PDFs, and generates cold emails.",
-    version="18.6.0" # Version bump for robust finalization logic
+    version="18.7.0" # Version bump for cover letter fixes
 )
 
 # --- CORS Middleware ---
@@ -336,6 +336,7 @@ def get_application_details(app_id: str):
             custom_vars = yaml.safe_load(f)
 
     finalized_pdf_path = os.path.join(app_path, f"Resume_{details.get('name', '').replace(' ', '_')}.pdf")
+    cover_letter_pdf_path = os.path.join(app_path, "Cover_Letter.pdf")
     
     return {
         "companyName": details.get("companyName"),
@@ -354,6 +355,11 @@ def get_application_details(app_id: str):
             "additionalDetails": details.get("additionalDetails", ""),
             "generatedEmailSubject": details.get("generatedEmailSubject", ""),
             "generatedEmailBody": details.get("generatedEmailBody", "")
+        },
+        "coverLetter": {
+            "additionalDetails": details.get("coverLetterAdditionalDetails", ""),
+            "generatedBody": details.get("generatedCoverLetterBody", ""),
+            "pdfUrl": f"/applications/{app_id}/cover-letter-pdf" if os.path.exists(cover_letter_pdf_path) else None
         },
         "finalizedPdfUrl": f"/applications/{app_id}/finalized-pdf" if os.path.exists(finalized_pdf_path) else None
     }
@@ -875,3 +881,4 @@ def delete_tracker_email(item_id: str):
         raise HTTPException(status_code=404, detail="Email item not found")
     write_tracker_data(TRACKER_EMAILS_PATH, emails)
     return
+
