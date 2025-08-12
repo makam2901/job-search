@@ -260,52 +260,47 @@
                     <h2 class="text-3xl font-bold mb-2">Cover Letter Generator</h2>
                     <p class="text-gray-600 max-w-md">Select a finalized application from the list on the left to create a tailored cover letter.</p>
                 </div>
-                <div id="coverLetterWorkspace" class="h-full grid grid-cols-12 gap-6 p-6 bg-gray-100 hidden">
-                    
-                    <div class="col-span-12 lg:col-span-6 bg-white p-6 rounded-lg shadow-md overflow-y-auto custom-scrollbar">
-                        <h2 id="coverLetterWorkspaceTitle" class="text-2xl font-bold mb-4"></h2>
-                        <div class="space-y-6">
+                <div id="coverLetterWorkspace" class="h-full grid grid-cols-1 lg:grid-cols-2 gap-6 p-6 bg-gray-100 hidden">
+                    <!-- Left Column -->
+                    <div class="bg-white p-6 rounded-lg shadow-md flex flex-col space-y-6 overflow-y-auto custom-scrollbar">
+                        <h2 id="coverLetterWorkspaceTitle" class="text-2xl font-bold"></h2>
+                        <div>
+                            <label for="clJobDescription" class="block text-sm font-medium text-gray-700">Job Description</label>
+                            <div id="clJobDescription" contenteditable="true" class="w-full border border-gray-300 rounded-lg p-4 min-h-[150px] overflow-y-auto bg-gray-50"></div>
+                        </div>
+                        <div>
+                            <label for="clAdditionalDetails" class="block text-sm font-medium text-gray-700">Additional Details / Notes for AI</label>
+                            <textarea id="clAdditionalDetails" rows="6" class="mt-1 w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., Emphasize my experience with cloud platforms."></textarea>
+                        </div>
+                        <div class="border-t pt-4 space-y-4">
                             <div>
-                                <label for="clJobDescription" class="block text-sm font-medium text-gray-700">Job Description</label>
-                                <div id="clJobDescription" class="mt-1 w-full p-3 border border-gray-200 rounded-md bg-gray-50 h-48 overflow-y-auto custom-scrollbar"></div>
+                                <label for="clModelProvider" class="block text-sm font-medium text-gray-700 mb-1">Select AI Model</label>
+                                <select id="clModelProvider" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="gemini">Google Gemini Pro</option>
+                                    <option value="chatgpt">ChatGPT (OpenRouter)</option>
+                                </select>
                             </div>
-                            <div>
-                                <label for="clAdditionalDetails" class="block text-sm font-medium text-gray-700">Additional Details / Notes for AI</label>
-                                <textarea id="clAdditionalDetails" rows="6" class="mt-1 w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., Emphasize my experience with cloud platforms."></textarea>
-                            </div>
-                            <div class="border-t pt-4 space-y-4">
-                                <div>
-                                    <label for="clModelProvider" class="block text-sm font-medium text-gray-700 mb-1">Select AI Model</label>
-                                    <select id="clModelProvider" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                        <option value="gemini">Google Gemini Pro</option>
-                                        <option value="chatgpt">ChatGPT (OpenRouter)</option>
-                                    </select>
-                                </div>
-                                <div class="flex items-center space-x-4">
-                                    <button id="generateCoverLetterBtn" class="bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 flex items-center justify-center app-button">
-                                        <svg id="clSpinner" class="spinner -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                                        Generate Cover Letter
-                                    </button>
-                                    <p id="clGenStatus" class="text-sm text-gray-600 h-5"></p>
-                                </div>
+                            <div class="flex items-center space-x-4">
+                                <button id="generateCoverLetterBtn" class="bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 flex items-center justify-center app-button">
+                                    <svg id="clSpinner" class="spinner -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                    Generate Cover Letter
+                                </button>
+                                <p id="clGenStatus" class="text-sm text-gray-600 h-5"></p>
                             </div>
                         </div>
                     </div>
 
-                    <div class="col-span-12 lg:col-span-6 bg-white p-6 rounded-lg shadow-md flex flex-col">
+                    <!-- Right Column -->
+                    <div class="bg-white p-6 rounded-lg shadow-md flex flex-col">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="text-xl font-semibold">Cover Letter Preview</h3>
                             <div class="flex items-center space-x-2">
                                 <button id="saveCoverLetterBtn" class="bg-blue-600 text-white font-semibold py-2 px-3 rounded-lg hover:bg-blue-700 app-button" disabled>Save</button>
-                                <button id="downloadCoverLetterBtn" class="bg-gray-600 text-white font-semibold py-2 px-3 rounded-lg hover:bg-gray-700 app-button" disabled>PDF</button>
                                 <p id="clSaveStatus" class="text-sm text-gray-600 h-5"></p>
                             </div>
                         </div>
                         <div class="flex-grow flex flex-col gap-4 overflow-hidden">
-                            <textarea id="coverLetterEditor" class="w-full h-1/2 border border-gray-200 rounded-md p-3 focus:ring-blue-500 focus:border-blue-500 custom-scrollbar" placeholder="Generated cover letter text will appear here..."></textarea>
-                            <div id="coverLetterPdfViewerContainer" class="w-full h-1/2 border border-gray-300 rounded-lg bg-gray-200">
-                                <iframe id="coverLetterPdfViewer" class="w-full h-full" frameborder="0"></iframe>
-                            </div>
+                             <textarea id="coverLetterEditor" class="w-full flex-grow border border-gray-200 rounded-md p-3 focus:ring-blue-500 focus:border-blue-500 custom-scrollbar" placeholder="Generated cover letter text will appear here..."></textarea>
                         </div>
                     </div>
                 </div>
@@ -636,9 +631,7 @@
         const clSpinner = document.getElementById('clSpinner');
         const clGenStatus = document.getElementById('clGenStatus');
         const coverLetterEditor = document.getElementById('coverLetterEditor');
-        const coverLetterPdfViewer = document.getElementById('coverLetterPdfViewer');
         const saveCoverLetterBtn = document.getElementById('saveCoverLetterBtn');
-        const downloadCoverLetterBtn = document.getElementById('downloadCoverLetterBtn');
         const clSaveStatus = document.getElementById('clSaveStatus');
 
 
@@ -724,7 +717,7 @@
         
         function showStatusMessage(element, message, isError = false, duration = 3000) {
             element.textContent = message;
-            element.style.color = isError ? '#ef4444' : '#10b981';
+            element.className = `text-sm h-5 ${isError ? 'text-red-600' : 'text-green-600'}`;
             setTimeout(() => {
                 element.textContent = '';
             }, duration);
@@ -1426,20 +1419,14 @@
             clJobDescription.innerHTML = '';
             clAdditionalDetails.value = '';
             coverLetterEditor.value = '';
-            coverLetterPdfViewer.src = 'about:blank';
             generateCoverLetterBtn.disabled = true;
             saveCoverLetterBtn.disabled = true;
-            downloadCoverLetterBtn.disabled = true;
             clGenStatus.textContent = '';
             clSaveStatus.textContent = '';
 
             try {
                 const details = await apiCall(`/applications/${appId}`);
-                if (details.jobDescription) {
-                    const tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = details.jobDescription;
-                    clJobDescription.textContent = tempDiv.textContent || tempDiv.innerText || '';
-                }
+                clJobDescription.innerHTML = details.jobDescription || '';
 
                 if (details.coverLetter) {
                     clAdditionalDetails.value = details.coverLetter.additionalDetails || '';
@@ -1450,12 +1437,11 @@
                     generateCoverLetterBtn.disabled = false;
                 } else {
                     clGenStatus.textContent = '⚠️ Please finalize a resume first.';
+                    clGenStatus.className = 'text-sm text-yellow-600 h-5';
                 }
 
-                if (details.coverLetter && details.coverLetter.pdfUrl) {
-                    coverLetterPdfViewer.src = `${API_BASE_URL}${details.coverLetter.pdfUrl}?t=${Date.now()}`;
+                if (details.coverLetter && details.coverLetter.generatedBody) {
                     saveCoverLetterBtn.disabled = false;
-                    downloadCoverLetterBtn.disabled = false;
                 }
 
             } catch (error) {
@@ -1601,23 +1587,18 @@
 
         // Resume Project Creation/Selection
         newApplicationBtn.addEventListener('click', () => {
+            switchTab('applications');
             currentAppId = null;
-            // Hide welcome, show the main application view
             welcomeView.classList.add('hidden');
             applicationView.classList.remove('hidden');
-
-            // Inside application view, show the form and hide the workspace
             newAppForm.classList.remove('hidden');
             workspace.classList.add('hidden');
-
-            // Reset form fields and focus
             companyNameInput.value = '';
             roleTitleInput.value = '';
             jobIdInput.value = '';
             jobLinkInput.value = '';
+            createAppStatus.textContent = '';
             companyNameInput.focus();
-
-            // Deselect any active application in the list
             renderApplicationList(allApplications);
         });
         createApplicationBtn.addEventListener('click', async () => {
@@ -1635,6 +1616,8 @@
                 allApplications.unshift(newApp);
                 handleAppSelection(data.appId);
                 showStatusMessage(createAppStatus, ''); // Clear status on success
+            } catch (error) {
+                showStatusMessage(createAppStatus, `Creation failed: ${error.message}`, true);
             } finally {
                 createApplicationBtn.disabled = false;
             }
@@ -1784,12 +1767,7 @@
                 const response = await apiCall(`/applications/${currentAppId}/generate-cover-letter`, 'POST', payload);
                 coverLetterEditor.value = response.cover_letter_body.replace(/\\n/g, '\n');
                 showStatusMessage(clGenStatus, '✅ Generation successful!');
-                
-                // Refresh PDF
-                coverLetterPdfViewer.src = `${API_BASE_URL}/applications/${currentAppId}/cover-letter-pdf?t=${Date.now()}`;
                 saveCoverLetterBtn.disabled = false;
-                downloadCoverLetterBtn.disabled = false;
-
             } catch (error) {
                 showStatusMessage(clGenStatus, `Generation failed: ${error.message}`, true);
             } finally {
@@ -1804,19 +1782,24 @@
             try {
                 const payload = { coverLetterText: coverLetterEditor.value };
                 await apiCall(`/applications/${currentAppId}/save-cover-letter`, 'POST', payload);
-                showStatusMessage(clSaveStatus, '✅ Saved!');
-                // Refresh PDF
-                coverLetterPdfViewer.src = `${coverLetterPdfViewer.src.split('?')[0]}?t=${Date.now()}`;
+                showStatusMessage(clSaveStatus, '✅ Saved! PDF has been generated.');
+                // Optionally, refresh the PDF viewer if you add one
+                const details = await apiCall(`/applications/${currentAppId}`);
+                if (details.coverLetter.pdfUrl) {
+                    const pdfIframe = document.createElement('iframe');
+                    pdfIframe.className = 'w-full h-full';
+                    pdfIframe.src = `${API_BASE_URL}${details.coverLetter.pdfUrl}?t=${Date.now()}`;
+                    const container = document.getElementById('coverLetterEditor').parentElement;
+                    const oldIframe = container.querySelector('iframe');
+                    if(oldIframe) oldIframe.remove();
+                    // This is a placeholder for where a PDF viewer would go.
+                    // For now, we just log that it was successful.
+                    console.log("PDF updated. URL:", pdfIframe.src);
+                }
             } catch (error) {
                 showStatusMessage(clSaveStatus, `Save failed: ${error.message}`, true);
             } finally {
                 saveCoverLetterBtn.disabled = false;
-            }
-        });
-
-        downloadCoverLetterBtn.addEventListener('click', () => {
-            if (coverLetterPdfViewer.src && !coverLetterPdfViewer.src.startsWith('about:blank')) {
-                window.open(coverLetterPdfViewer.src.split('?')[0]);
             }
         });
         

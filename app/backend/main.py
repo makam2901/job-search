@@ -30,7 +30,7 @@ load_dotenv()
 app = FastAPI(
     title="ApplySmart Backend",
     description="Manages job applications, renders PDFs, and generates cold emails.",
-    version="18.7.1" # Version bump for cover letter fixes
+    version="19.0.0" # Version bump for cover letter fixes
 )
 
 # --- CORS Middleware ---
@@ -336,7 +336,7 @@ def get_application_details(app_id: str):
             custom_vars = yaml.safe_load(f)
 
     finalized_pdf_path = os.path.join(app_path, f"Resume_{details.get('name', '').replace(' ', '_')}.pdf")
-    cover_letter_pdf_path = os.path.join(app_path, "Cover_Letter.pdf")
+    finalized_cover_letter_file = details.get("finalizedCoverLetterFile")
     
     return {
         "companyName": details.get("companyName"),
@@ -359,7 +359,7 @@ def get_application_details(app_id: str):
         "coverLetter": {
             "additionalDetails": details.get("coverLetterAdditionalDetails", ""),
             "generatedBody": details.get("generatedCoverLetterBody", ""),
-            "pdfUrl": f"/applications/{app_id}/cover-letter-pdf" if os.path.exists(cover_letter_pdf_path) else None
+            "pdfUrl": f"/applications/{app_id}/cover-letter-pdf" if finalized_cover_letter_file and os.path.exists(os.path.join(app_path, finalized_cover_letter_file)) else None
         },
         "finalizedPdfUrl": f"/applications/{app_id}/finalized-pdf" if os.path.exists(finalized_pdf_path) else None
     }
@@ -650,21 +650,11 @@ def generate_cover_letter(app_id: str, request: CoverLetterGenerationRequest):
         cover_letter_content = json.loads(cover_letter_str)
         body = cover_letter_content.get("cover_letter_body", "")
 
-        # Save generated content and details
+        # Save generated content and details but don't generate PDF yet
         update_app_details(app_path, {
             "coverLetterAdditionalDetails": request.additionalDetails,
             "generatedCoverLetterBody": body
         })
-
-        # Generate PDF
-        with open(BASE_RESUME_PATH, 'r', encoding='utf-8') as f:
-            base_resume_data = yaml.safe_load(f)
-        
-        contact_info = base_resume_data.get('contact', {})
-        variables = load_variables() # Load default formatting
-        pdf_generator = CoverLetterPDFGenerator(variables=variables)
-        pdf_path = os.path.join(app_path, "Cover_Letter.pdf")
-        pdf_generator.generate_pdf(body, contact_info, pdf_path)
 
         return {"cover_letter_body": body}
 
@@ -678,18 +668,28 @@ def save_cover_letter(app_id: str, request: SaveCoverLetterRequest):
         raise HTTPException(status_code=404, detail="Application not found.")
     
     try:
-        # Save the text
-        update_app_details(app_path, {"generatedCoverLetterBody": request.coverLetterText})
-
-        # Regenerate the PDF with the updated text
+        # Load base resume to get name and contact info
         with open(BASE_RESUME_PATH, 'r', encoding='utf-8') as f:
             base_resume_data = yaml.safe_load(f)
         
         contact_info = base_resume_data.get('contact', {})
+        candidate_name = base_resume_data.get('name', 'Candidate')
+        safe_name = "".join(c if c.isalnum() else '_' for c in candidate_name)
+        
+        # Define final PDF name and path
+        final_pdf_name = f"CoverLetter_{safe_name}.pdf"
+        pdf_path = os.path.join(app_path, final_pdf_name)
+
+        # Save the text and the filename to details
+        update_app_details(app_path, {
+            "generatedCoverLetterBody": request.coverLetterText,
+            "finalizedCoverLetterFile": final_pdf_name
+        })
+
+        # Generate the PDF with the final name
         variables = load_variables()
         pdf_generator = CoverLetterPDFGenerator(variables=variables)
-        pdf_path = os.path.join(app_path, "Cover_Letter.pdf")
-        pdf_generator.generate_pdf(request.coverLetterText, contact_info, pdf_path)
+        pdf_generator.generate_pdf(request.coverLetterText, contact_info, pdf_path, candidate_name)
         
         return {"message": "Cover letter saved and PDF updated."}
     except Exception as e:
@@ -698,10 +698,27 @@ def save_cover_letter(app_id: str, request: SaveCoverLetterRequest):
 @app.get("/applications/{app_id}/cover-letter-pdf")
 def get_cover_letter_pdf(app_id: str):
     app_path = os.path.join(APPLICATIONS_DIR, app_id)
-    pdf_path = os.path.join(app_path, "Cover_Letter.pdf")
+    if not os.path.isdir(app_path):
+        raise HTTPException(status_code=404, detail="Application not found.")
+    
+    details_path = os.path.join(app_path, "app_details.json")
+    if not os.path.exists(details_path):
+        raise HTTPException(status_code=404, detail="Application details not found.")
+        
+    with open(details_path, 'r') as f:
+        details = json.load(f)
+    
+    pdf_filename = details.get("finalizedCoverLetterFile")
+    if not pdf_filename:
+        raise HTTPException(status_code=404, detail="Finalized cover letter not found in details.")
+
+    pdf_path = os.path.join(app_path, pdf_filename)
+
     if not os.path.exists(pdf_path):
-        raise HTTPException(status_code=404, detail="Cover Letter PDF not found.")
-    return FileResponse(pdf_path, media_type='application/pdf', filename="Cover_Letter.pdf")
+        raise HTTPException(status_code=404, detail="Cover Letter PDF file not found on disk.")
+        
+    return FileResponse(pdf_path, media_type='application/pdf', filename=pdf_filename)
+
 
 # --- Tracker Endpoints ---
 

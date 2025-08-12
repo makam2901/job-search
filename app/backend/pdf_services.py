@@ -218,7 +218,7 @@ class CoverLetterPDFGenerator:
         self.styles.add(ParagraphStyle(name='Signature', parent=self.styles['Normal'], fontName=self.base_font, fontSize=11))
         self.styles.add(ParagraphStyle(name='CoverLetterContact', parent=self.styles['Normal'], fontName=self.base_font, fontSize=9, leading=12, alignment=TA_LEFT))
 
-    def generate_pdf(self, body_text: str, contact_info: Dict, output_file: str):
+    def generate_pdf(self, body_text: str, contact_info: Dict, output_file: str, candidate_name: str):
         doc = SimpleDocTemplate(output_file, pagesize=letter, rightMargin=inch, leftMargin=inch, topMargin=inch, bottomMargin=inch)
         story = []
         
@@ -229,7 +229,7 @@ class CoverLetterPDFGenerator:
         story.append(Spacer(1, 0.25 * inch))
         story.append(Paragraph("Yours sincerely,", self.styles['CoverLetterBody']))
         story.append(Spacer(1, 0.2 * inch))
-        story.append(Paragraph("Sri Manikesh Makam", self.styles['Signature']))
+        story.append(Paragraph(candidate_name, self.styles['Signature']))
         story.append(Spacer(1, 0.1 * inch))
 
         contact_parts = []
