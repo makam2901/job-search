@@ -9,6 +9,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 from typing import Dict, List, Tuple
 import math
 import copy
+import re
 
 ALIGNMENT_MAP = {
     "left": TA_LEFT,
@@ -215,32 +216,42 @@ class CoverLetterPDFGenerator:
 
     def setup_custom_styles(self):
         self.styles.add(ParagraphStyle(name='CoverLetterBody', parent=self.styles['Normal'], fontName=self.base_font, fontSize=11, leading=14, spaceAfter=12))
-        self.styles.add(ParagraphStyle(name='Signature', parent=self.styles['Normal'], fontName=self.base_font, fontSize=11))
-        self.styles.add(ParagraphStyle(name='CoverLetterContact', parent=self.styles['Normal'], fontName=self.base_font, fontSize=9, leading=12, alignment=TA_LEFT))
+        self.styles.add(ParagraphStyle(name='Signature', parent=self.styles['Normal'], fontName=self.base_font, fontSize=11, leading=14, spaceAfter=4))
 
     def generate_pdf(self, body_text: str, contact_info: Dict, output_file: str, candidate_name: str):
         doc = SimpleDocTemplate(output_file, pagesize=letter, rightMargin=inch, leftMargin=inch, topMargin=inch, bottomMargin=inch)
         story = []
         
-        paragraphs = body_text.strip().split('\\n\\n')
+        # Split text into paragraphs based on one or more empty lines (to handle different newline conventions)
+        paragraphs = re.split(r'\n\s*\n', body_text.strip())
         for para_text in paragraphs:
-            story.append(Paragraph(para_text.replace('\\n', '<br/>'), self.styles['CoverLetterBody']))
+            # Replace remaining single newlines with <br/> for line breaks within a paragraph
+            formatted_para = para_text.replace('\n', '<br/>')
+            story.append(Paragraph(formatted_para, self.styles['CoverLetterBody']))
         
         story.append(Spacer(1, 0.25 * inch))
-        story.append(Paragraph("Yours sincerely,", self.styles['CoverLetterBody']))
+        story.append(Paragraph("Yours sincerely,", self.styles['Signature']))
         story.append(Spacer(1, 0.2 * inch))
         story.append(Paragraph(candidate_name, self.styles['Signature']))
-        story.append(Spacer(1, 0.1 * inch))
 
+        # Contact Info
         contact_parts = []
         if 'email' in contact_info: contact_parts.append(f'<link href="mailto:{contact_info["email"]}" color="blue">{contact_info["email"]}</link>')
         if 'phone' in contact_info: contact_parts.append(f'<link href="tel:{contact_info["phone"]}" color="blue">{contact_info["phone"]}</link>')
-        if 'linkedin' in contact_info: contact_parts.append(f'<link href="{contact_info["linkedin"]}" color="blue">LinkedIn</link>')
-        if 'github' in contact_info: contact_parts.append(f'<link href="{contact_info["github"]}" color="blue">Github</link>')
-        if 'medium' in contact_info: contact_parts.append(f'<link href="{contact_info["medium"]}" color="blue">Medium</link>')
         
         contact_line = ' | '.join(contact_parts)
-        story.append(Paragraph(contact_line, self.styles['CoverLetterContact']))
+        if contact_line:
+            story.append(Paragraph(contact_line, self.styles['Signature']))
+
+        # Social Links
+        social_parts = []
+        if 'linkedin' in contact_info: social_parts.append(f'<link href="{contact_info["linkedin"]}" color="blue">LinkedIn</link>')
+        if 'github' in contact_info: social_parts.append(f'<link href="{contact_info["github"]}" color="blue">Github</link>')
+        if 'medium' in contact_info: social_parts.append(f'<link href="{contact_info["medium"]}" color="blue">Medium</link>')
+        
+        social_line = ' | '.join(social_parts)
+        if social_line:
+            story.append(Paragraph(social_line, self.styles['Signature']))
 
         doc.build(story)
         print(f"Cover letter generated: {output_file}")
