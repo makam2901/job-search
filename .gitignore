@@ -1,5 +1,6 @@
-# Ignore the applications data directory
-/applications/
+# Ignore the applications data directory contents but keep the folder
+/applications/*
+!/applications/.gitkeep
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
