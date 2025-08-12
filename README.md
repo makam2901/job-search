@@ -18,20 +18,20 @@ ApplySmart is a comprehensive, AI-powered job application management tool design
 ## 2. Features
 ApplySmart is organized into several tabs, each serving a distinct purpose in the job application lifecycle.
 
-### Application Management & Workflow (`Applications` Tab)
+### 2.1 Application Management & Workflow (`Applications` Tab)
 This is the central hub for creating and managing your resume projects.
 
-#### Project Creation:
+#### <u>Project Creation:</u>
 
 - Create a new, unique project for each job application by providing a Company Name and Role Title.
 - Optionally include a Job ID and Job Link for tracking purposes.
 
-#### Project Navigation:
+#### <u>Project Navigation:</u>
 
 - A searchable list of all your projects is available in the sidebar, sorted by creation date.
 - The sidebar can be collapsed for a wider workspace.
 
-#### Resume Generation Workflow
+#### <u>Resume Generation Workflow</u>
 A 5-step process to take you from a job description to a finalized, tailored resume.
 Applications
 - **Step 1 - Job Description**: 
@@ -52,7 +52,7 @@ Applications
     - The Finalize Resume button takes your currently selected content and formatting, saves it as a permanent `finalized_resume.yaml` and *Resume_{Your_Name}.pdf*, and locks it in.
     - The Track Application button (enabled after finalization) sends the application details directly to the Tracker tab.
 
-#### User Journey Example (`` Tab):
+#### <u>User Journey Example (`Applications` Tab)</u>
 
 1. Alex finds a Data Scientist role at "Innovate Inc.".
 2. In ApplySmart, Alex clicks `New Application`, enters "Innovate Inc." and "Data Scientist", and saves the project.
@@ -63,75 +63,94 @@ Applications
 7. Satisfied, he clicks `Finalize Resume`. The PDF is saved and the version is locked.
 8. Finally, he clicks `Track Application` to add it to his tracking board.
 
-### Cold Email Generation (`Email` Tab)
+### 2.2 Cover Letter Generation (`Cover Letter` Tab)
+
+This tab helps you create a compelling, AI-generated cover letter based on your finalized resume and the specific job description.
+
+- <u>**Application Selection**</u>: To begin, select a project from the sidebar. This feature requires a finalized resume, so it will only activate for projects where you have completed Step 5 in the `Applications` tab.
+
+- <u>**AI-Powered Drafting**</u>: The tool automatically pulls your finalized resume data and the saved job description. You can add extra instructions or points of emphasis for the AI.
+
+- <u>**Content Generation**</u>: Click Generate Cover Letter, and the AI will write a full-length cover letter that creates a persuasive narrative, connecting your key achievements to the employer's needs.
+
+- <u>**Review and Save**</u>: The generated text appears in an editor where you can make final adjustments. Once satisfied, clicking Save will create a `CoverLetter_{Your_Name}`.pdf file within your project folder.
+
+#### <u>User Journey Example (Cover Letter Tab)</u>:
+
+9. Now that his resume for "Innovate Inc." is finalized, Alex clicks on the `Cover Letter` tab.
+10. The workspace loads, automatically pulling in the job description for the Data Scientist role.
+11. In the `Additional Details` text box, he writes, "Please highlight my experience in deploying models on GCP, as mentioned in the projects."
+12. He clicks Generate Cover Letter. The AI drafts a professional letter that tells a story about his past successes and explicitly links them to the requirements in the job description.
+13. Alex reads the generated letter, is pleased with the result, and clicks Save. A polished CoverLetter_Alex.pdf is immediately saved to his project directory, ready for the application.
+### 2.2 Cold Email Generation (`Email` Tab)
 This tab helps you craft personalized outreach emails for your finalized applications.
 
-- **Application Selection**: Select a finalized application from the sidebar. The tool will automatically pull the corresponding job and resume data.
+- <u>**Application Selection**</u>: Select a finalized application from the sidebar. The tool will automatically pull the corresponding job and resume data.
 - Contact Details: Enter the name, email, and LinkedIn URL of the recruiter or hiring manager.
-- **AI-Powered Generation**: The AI uses the contact's LinkedIn profile (if provided), the job description, and your finalized resume to generate a personalized cold email that highlights your most relevant qualifications.
-- **Email Composer**: The generated subject and body appear in an editable composer, allowing you to make final tweaks.
-- **Actions:**
+- <u>**AI-Powered Generation**</u>: The AI uses the contact's LinkedIn profile (if provided), the job description, and your finalized resume to generate a personalized cold email that highlights your most relevant qualifications.
+- <u>**Email Composer**</u>: The generated subject and body appear in an editable composer, allowing you to make final tweaks.
+- <u>**Actions**</u>:
     - `Download Resume`: Quickly download the finalized PDF to attach to your email.
     - `Track Email`: Send the email details (recipient, company, etc.) to the Tracker tab.
     - `Open in Email Client`: Open a pre-filled mailto: link in your default email application.
 
-#### User Journey Example (`Email` Tab):
+#### <u>User Journey Example (`Email` Tab)</u>:
 
-9. After finalizing his resume, Alex switches to the Email tab.
-10. He selects the "Innovate Inc. - Data Scientist" project from the sidebar. The workspace populates with the project's details.
-11. He does a quick search on LinkedIn and finds the hiring manager, Jane Doe. He enters her name, email, and LinkedIn profile URL into the contact fields.
-12. He clicks `Generate Email`. The AI analyzes Jane's profile, the JD, and his resume, and produces a personalized draft that mentions a recent article Jane posted.
-13. Alex reads the draft, makes a small tweak to the closing, and clicks `Download Resume` to get the PDF he just finalized.
-14. He then clicks `Open in Email Client`, which opens his default mail app with the recipient, subject, and body pre-filled. He attaches the resume and sends the email.
-15. Back in ApplySmart, he clicks `Track Email` to log the outreach in the tracker.
+14. After finalizing his resume, Alex switches to the Email tab.
+15. He selects the "Innovate Inc. - Data Scientist" project from the sidebar. The workspace populates with the project's details.
+16. He does a quick search on LinkedIn and finds the hiring manager, Jane Doe. He enters her name, email, and LinkedIn profile URL into the contact fields.
+17. He clicks `Generate Email`. The AI analyzes Jane's profile, the JD, and his resume, and produces a personalized draft that mentions a recent article Jane posted.
+18. Alex reads the draft, makes a small tweak to the closing, and clicks `Download Resume` to get the PDF he just finalized.
+19. He then clicks `Open in Email Client`, which opens his default mail app with the recipient, subject, and body pre-filled. He attaches the resume and sends the email.
+20. Back in ApplySmart, he clicks `Track Email` to log the outreach in the tracker.
 
-### Favorites (`Favorites` Tab)
+### 2.3 Favorites (`Favorites` Tab)
 
 A simple tool to keep track of companies you are particularly interested in.
 
-- **Add Companies:** Quickly add companies to a grid of favorites.
-- **Daily Checklist:** Mark companies you've checked for new openings each day. The checklist resets daily.
+- <u>**Add Companies**</u>: Quickly add companies to a grid of favorites.
+- <u>**Daily Checklist**</u>: Mark companies you've checked for new openings each day. The checklist resets daily.
 
-#### User Journey Example (Favorites Tab):
+#### <u>User Journey Example (`Favorites` Tab)</u>:
 
-16. Impressed by Innovate Inc.'s work, Alex navigates to the Favorites tab and adds "Innovate Inc." to his list of target companies.
-17. The next morning, as part of his routine, he visits the Favorites tab and checks the box next to "Innovate Inc." to mark that he has checked their career page for new roles today.
+21. Impressed by Innovate Inc.'s work, Alex navigates to the Favorites tab and adds "Innovate Inc." to his list of target companies.
+22. The next morning, as part of his routine, he visits the Favorites tab and checks the box next to "Innovate Inc." to mark that he has checked their career page for new roles today.
 
-### Application & Email Tracking (`Tracker` Tab)
+### 2.4 Application & Email Tracking (`Tracker` Tab)
 
 A central dashboard to monitor the status of all your job-seeking activities.
 
-- **Dual Views:** Switch between an `Applications` table and an `Emails` table.
-- **Editable Tables:** All fields in the tables are directly editable. You can update the status (e.g., from `Applied` to `Interviewing`), add contact names, or update links on the fly.
-- **Manual Entry:** A form is provided to manually add applications to the tracker that weren't created through a Resume Project.
+- <u>**Dual Views**</u>: Switch between an `Applications` table and an `Emails` table.
+- <u>**Editable Tables**</u>: All fields in the tables are directly editable. You can update the status (e.g., from `Applied` to `Interviewing`), add contact names, or update links on the fly.
+- <u>**Manual Entry**</u>: A form is provided to manually add applications to the tracker that weren't created through a Resume Project.
 
-#### User Journey Example (`Tracker` Tab):
+#### <u>User Journey Example (`Tracker` Tab)</u>:
 
-18. Alex clicks on the `Tracker` tab to see his progress.
-19. In the `Applications` view, the "Innovate Inc." role is already there from when he clicked `Track Application`. He clicks on the status dropdown and changes it from `To Apply` to `Applied`.
-20. He then clicks the `Emails` sub-tab and sees the email to Jane Doe has been logged automatically. Its status is `Sent`.
-21. A week later, Jane replies to schedule an interview! Alex returns to the tracker, updates the application status to `Interviewing`, and the email status to `Replied`.
+23. Alex clicks on the `Tracker` tab to see his progress.
+24. In the `Applications` view, the "Innovate Inc." role is already there from when he clicked `Track Application`. He clicks on the status dropdown and changes it from `To Apply` to `Applied`.
+25. He then clicks the `Emails` sub-tab and sees the email to Jane Doe has been logged automatically. Its status is `Sent`.
+26. A week later, Jane replies to schedule an interview! Alex returns to the tracker, updates the application status to `Interviewing`, and the email status to `Replied`.
 
-### Performance Overview (`Dashboard` Tab)
+### 2.5 Performance Overview (`Dashboard` Tab)
 
 Visual analytics to understand your job search progress.
 
-- **KPI Cards**: At-a-glance metrics for total applications, interviews, pending applications, and rejections.
-- **Charts:**
-    - *Application Funnel:* A doughnut chart showing the distribution of your applications by status.
-    - *Applications Over Time:* A bar chart showing how many applications you've sent out each week.
-    - *Email Status:* A doughnut chart showing the status of your tracked emails (Sent, Replied, etc.).
+- <u>**KPI Cards**</u>: At-a-glance metrics for total applications, interviews, pending applications, and rejections.
+- <u>**Charts**</u>:
+    - <u>*Application Funnel*</u>: A doughnut chart showing the distribution of your applications by status.
+    - <u>*Applications Over Time*</u>: A bar chart showing how many applications you've sent out each week.
+    - <u>*Email Status*</u>: A doughnut chart showing the status of your tracked emails (Sent, Replied, etc.).
 
-#### User Journey Example (Dashboard Tab):
+#### <u>User Journey Example (Dashboard Tab)</u>:
 
-22. At the end of the week, Alex wants to see a summary of his efforts. He goes to the Dashboard tab.
-23. He glances at the KPI cards and sees his `Total Applications` count has increased, and more importantly, the `Interviewing` count is now at 1.
-24. He looks at the `Application Funnel` chart, which visually confirms that one of his applications has moved into the interview stage, motivating him for the week ahead.
+27. At the end of the week, Alex wants to see a summary of his efforts. He goes to the Dashboard tab.
+28. He glances at the KPI cards and sees his `Total Applications` count has increased, and more importantly, the `Interviewing` count is now at 1.
+29. He looks at the `Application Funnel` chart, which visually confirms that one of his applications has moved into the interview stage, motivating him for the week ahead.
 
 ## 3. Setup Instructions
 To run ApplySmart locally, you will need Docker Desktop installed and running on your machine.
 
-### 1. Clone the Repository
+### 3.1 Clone the Repository
 - Open your terminal and clone the project repository from its source.
 
     ```bash
@@ -139,13 +158,13 @@ To run ApplySmart locally, you will need Docker Desktop installed and running on
     cd job-search
     ```
 
-### 2. Create the `applications` Folder
+### 3.2 Create the `applications` Folder
 - The tool needs a dedicated folder at the root of the project to store all the data for your resume projects.
     ```bash 
     mkdir applications
     ```
 
-### 3. Create the Environment File
+### 3.3 Create the Environment File
 - The backend requires API keys for the AI models. Create a `.env` file inside the `app/backend/` directory.
     ```bash
     cd app/backend
@@ -160,35 +179,35 @@ To run ApplySmart locally, you will need Docker Desktop installed and running on
     ```
     
 
-### 4. Build and Run with Docker Compose
+### 3.4 Build and Run with Docker Compose
 - From the root directory of the project, run the following command. This will build the Docker images for the frontend and backend and start the services.
     ```bash
     docker-compose up --build
     ```
 - **NOTE:** If docker compose is not installed follow the steps menitoned [here](https://docs.docker.com/compose/install/).
 
-### 5. Access the Application
+### 3.5 Access the Application
 
 - The frontend will be available at `http://localhost:8080`.
 - The backend API will be running at `http://localhost:8000`.
 
 ## 4. Customization Instructions
-### Base Resume (`base_resume_fixed.yaml`)
+### 4.1 Base Resume (`base_resume_fixed.yaml`)
 
 This file is the foundation of every resume you generate. It's crucial to fill it out completely and correctly.
 
-- **Structure**: The file is in YAML format. Pay close attention to indentation.
-- **name and contact**: Fill in your personal details. These are used to populate the header of the resume.
-- **education**: List your degrees. The courses field is a single string of comma-separated course names.
-- **skills**: This is a list of dictionaries. Each dictionary represents a skill category (e.g., Languages, ML_Techniques). The value is a list of skills in that category. The AI will reorder these categories and the skills within them based on the job description.
-- **experience and projects**: For these sections, the context field is key. It's a short, 1-2 sentence summary of your role or project. The AI uses this context as a creative "seed" to invent the detailed, quantified, PAR-framework bullet points. You do not need to write full bullet points here.
-- **certifications**: List any relevant certifications. The description is a list of bullet points.
+- <u>**Structure**</u>: The file is in YAML format. Pay close attention to indentation.
+- <u>**name and contact**</u>: Fill in your personal details. These are used to populate the header of the resume.
+- <u>**education**</u>: List your degrees. The courses field is a single string of comma-separated course names.
+- <u>**skills**</u>: This is a list of dictionaries. Each dictionary represents a skill category (e.g., Languages, ML_Techniques). The value is a list of skills in that category. The AI will reorder these categories and the skills within them based on the job description.
+- <u>**experience and projects**</u>: For these sections, the context field is key. It's a short, 1-2 sentence summary of your role or project. The AI uses this context as a creative "seed" to invent the detailed, quantified, PAR-framework bullet points. You do not need to write full bullet points here.
+- <u>**certifications**</u>: List any relevant certifications. The description is a list of bullet points.
 
-### AI Prompting (`app/backend/llm_services.py`)
+### 4.2 AI Prompting (`app/backend/llm_services.py`)
 
 The logic for the AI is located in the agent_resume_tailor function. You can customize its behavior by editing the prompt string within this function.
 
-#### Changing Bullet Point Counts:
+#### <u>Changing Bullet Point Counts</u>:
 - Find the section in the prompt labeled Number of Bullets. You can change the integer values to control how many points are generated for each job experience.
 
 - *Example from the prompt:*
@@ -198,18 +217,18 @@ The logic for the AI is located in the agent_resume_tailor function. You can cus
         - AB INBEV: 8 points
         - Janta Ka Mood: 2 points
     ```
-#### Changing Word/Character Limits:
+#### <u>Changing Word/Character Limits</u>:
 
 - The prompt contains strict instructions like `make the entire line is 135 characters. strict.` 
 - You can find and modify these numerical values to adjust the length of the generated summary and bullet points.
 
-#### Changing Project Bullet Point Count:
+#### <u>Changing Project Bullet Point Count</u>:
 
 - The prompt for projects_reordered specifies `Only 2 bullets per project.` 
 - You can change this number to get more or fewer bullets for your projects.
 
-#### Default PDF Styling (`app/backend/variables.yaml`)
+#### <u>Default PDF Styling (`app/backend/variables.yaml`)</u>:
 - This file controls the default visual styling of the PDF output. 
 - You can change font sizes, spacing, and the base font family (Times-Roman, Helvetica, or Courier) here without needing to touch the code.
-- These values populate the "Formatting & Spacing" form in the UI, and any changes you make in the UI for a specific project will override these defaults.
+- These values populate the `Formatting & Spacing` form in the UI, and any changes you make in the UI for a specific project will override these defaults.
 

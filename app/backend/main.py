@@ -201,7 +201,7 @@ def filter_resume_data(data: Dict, selections: Dict) -> Dict:
             filtered_data['contact']['location'] = selections['contact-location']
 
     # Handle section-level and item-level filtering based on checkboxes
-    sections_to_process = ['summary', 'skills', 'education', 'experience', 'projects', 'certifications']
+    sections_to_process = ['summary', 'skills', 'education', 'experience', 'projects']
     for section_key in sections_to_process:
         if section_key not in filtered_data:
             continue
