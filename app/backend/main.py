@@ -30,7 +30,7 @@ load_dotenv()
 app = FastAPI(
     title="ApplySmart Backend",
     description="Manages job applications, renders PDFs, and generates cold emails.",
-    version="18.7.0" # Version bump for cover letter fixes
+    version="18.7.1" # Version bump for cover letter fixes
 )
 
 # --- CORS Middleware ---
@@ -364,7 +364,7 @@ def get_application_details(app_id: str):
         "finalizedPdfUrl": f"/applications/{app_id}/finalized-pdf" if os.path.exists(finalized_pdf_path) else None
     }
 
-@app.get("/applications/{app_id}/resume-content")
+@app.get("/applications/{app_id}/resume-content", response_model=Dict)
 def get_resume_version_content(app_id: str, filename: str):
     app_path = os.path.join(APPLICATIONS_DIR, app_id)
     if not os.path.isdir(app_path):
@@ -881,4 +881,3 @@ def delete_tracker_email(item_id: str):
         raise HTTPException(status_code=404, detail="Email item not found")
     write_tracker_data(TRACKER_EMAILS_PATH, emails)
     return
-

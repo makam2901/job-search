@@ -61,7 +61,6 @@
 <body class="bg-gray-100 text-gray-800 overflow-hidden">
 
     <div class="flex h-screen">
-        <!-- Sidebar -->
         <aside id="sidebar" class="w-80 bg-white border-r border-gray-200 p-4 flex flex-col shrink-0">
             <div class="flex justify-between items-center mb-6 h-8 relative">
                 <h1 class="text-2xl font-bold text-blue-600 flex items-center justify-center w-full">
@@ -86,9 +85,7 @@
             </div>
         </aside>
 
-        <!-- Main Content -->
         <main id="mainContent" class="flex-grow flex flex-col bg-gray-50">
-            <!-- Main Header with Expander and Tabs -->
             <div class="flex items-center border-b border-gray-200 bg-white">
                  <div class="flex items-center pl-4">
                     <h1 id="mainHeaderLogo" class="text-2xl font-bold text-blue-600 hidden pr-4">ApplySmart ✨</h1>
@@ -98,7 +95,7 @@
                 </div>
                 <nav class="-mb-px flex space-x-6 px-4" aria-label="Tabs">
                     <button data-tab="applications" class="tab-button active shrink-0 border-b-2 font-medium px-1 py-4 text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">Applications</button>
-                    <button data-tab="cover-letter" class="tab-button shrink-0 border-b-2 font-medium px-1 py-4 text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">Cover Letter</button>
+                    <button data-tab="coverLetter" class="tab-button shrink-0 border-b-2 font-medium px-1 py-4 text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">Cover Letter</button>
                     <button data-tab="email" class="tab-button shrink-0 border-b-2 font-medium px-1 py-4 text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">Email</button>
                     <button data-tab="favorites" class="tab-button shrink-0 border-b-2 font-medium px-1 py-4 text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">Favorites</button>
                     <button data-tab="tracker" class="tab-button shrink-0 border-b-2 font-medium px-1 py-4 text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">Tracker</button>
@@ -107,7 +104,6 @@
             </div>
 
 
-            <!-- Applications Tab Content -->
             <div id="applicationsContent" class="tab-content active h-full overflow-y-auto">
                 <div id="welcomeView" class="text-center flex flex-col items-center justify-center h-full">
                     <h2 class="text-3xl font-bold mb-2">Welcome to ApplySmart</h2>
@@ -259,24 +255,14 @@
                 </div>
             </div>
 
-            <!-- Cover Letter Tab Content -->
-            <div id="coverLetterContent" class="tab-content h-full overflow-hidden">
+            <div id="coverLetterContent" class="tab-content h-full overflow-hidden hidden">
                 <div id="coverLetterWelcomeView" class="text-center flex flex-col items-center justify-center h-full">
                     <h2 class="text-3xl font-bold mb-2">Cover Letter Generator</h2>
                     <p class="text-gray-600 max-w-md">Select a finalized application from the list on the left to create a tailored cover letter.</p>
                 </div>
                 <div id="coverLetterWorkspace" class="h-full grid grid-cols-12 gap-6 p-6 bg-gray-100 hidden">
                     
-                    <!-- Left Pane (Projects) -->
-                    <div class="col-span-12 lg:col-span-3 bg-white p-6 rounded-lg shadow-md overflow-y-auto custom-scrollbar">
-                        <h3 class="text-xl font-semibold mb-4 border-b pb-3">Relevant Projects</h3>
-                        <div id="clProjectsList" class="space-y-4 mt-4">
-                            <!-- Projects will be dynamically inserted here -->
-                        </div>
-                    </div>
-
-                    <!-- Middle Pane (Inputs) -->
-                    <div class="col-span-12 lg:col-span-5 bg-white p-6 rounded-lg shadow-md overflow-y-auto custom-scrollbar">
+                    <div class="col-span-12 lg:col-span-6 bg-white p-6 rounded-lg shadow-md overflow-y-auto custom-scrollbar">
                         <h2 id="coverLetterWorkspaceTitle" class="text-2xl font-bold mb-4"></h2>
                         <div class="space-y-6">
                             <div>
@@ -306,8 +292,7 @@
                         </div>
                     </div>
 
-                    <!-- Right Pane (Preview) -->
-                    <div class="col-span-12 lg:col-span-4 bg-white p-6 rounded-lg shadow-md flex flex-col">
+                    <div class="col-span-12 lg:col-span-6 bg-white p-6 rounded-lg shadow-md flex flex-col">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="text-xl font-semibold">Cover Letter Preview</h3>
                             <div class="flex items-center space-x-2">
@@ -326,7 +311,6 @@
                 </div>
             </div>
             
-            <!-- Favorites Tab Content -->
             <div id="favoritesContent" class="tab-content h-full overflow-y-auto p-8 hidden">
                 <div class="bg-white p-6 rounded-lg shadow-md mb-8">
                     <h3 class="text-2xl font-semibold mb-4">Add a Favorite Company</h3>
@@ -339,11 +323,9 @@
                     </form>
                 </div>
                 <div id="favoritesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    <!-- Favorite company tiles will be inserted here -->
-                </div>
+                    </div>
             </div>
 
-            <!-- Email Tab Content -->
             <div id="emailContent" class="tab-content h-full grid grid-cols-12 gap-6 p-6 bg-gray-100 overflow-hidden hidden">
                 <div id="emailWelcomeView" class="col-span-12 text-center flex flex-col items-center justify-center h-full">
                     <h2 class="text-3xl font-bold mb-2">Cold Email Assistant</h2>
@@ -351,7 +333,6 @@
                 </div>
 
                 <div id="emailWorkspace" class="col-span-12 h-full grid grid-cols-12 gap-6 hidden">
-                    <!-- Middle Pane (Email Details & Generation) -->
                     <div class="col-span-12 lg:col-span-5 bg-white p-6 rounded-lg shadow-md overflow-y-auto custom-scrollbar">
                         <h2 id="emailWorkspaceTitle" class="text-2xl font-bold mb-4"></h2>
                         <div class="space-y-4">
@@ -390,7 +371,6 @@
                         </div>
                     </div>
 
-                    <!-- Right Pane (Email Composer) -->
                     <div class="col-span-12 lg:col-span-7 bg-white p-6 rounded-lg shadow-md flex flex-col">
                         <h3 class="text-xl font-semibold mb-4">Email Composer</h3>
                         <div class="space-y-3 flex-grow flex flex-col">
@@ -425,9 +405,7 @@
                 </div>
             </div>
 
-            <!-- Tracker Tab Content -->
             <div id="trackerContent" class="tab-content h-full overflow-y-auto p-8 hidden">
-                <!-- Sub-tabs -->
                 <div class="mb-6 border-b border-gray-200">
                     <nav id="trackerSubTabs" class="-mb-px flex space-x-6" aria-label="Tracker Tabs">
                         <button data-tracker-tab="applications" class="tracker-tab-button active shrink-0 border-b-2 font-medium px-1 py-3 text-sm">Applications</button>
@@ -435,7 +413,6 @@
                     </nav>
                 </div>
 
-                <!-- Applications Tracker Content -->
                 <div id="applicationsTracker" class="tracker-tab-content active">
                     <div class="bg-white p-6 rounded-lg shadow-md mb-8">
                         <h3 class="text-2xl font-semibold mb-4">Add New Job Application Manually</h3>
@@ -487,7 +464,6 @@
                     </div>
                 </div>
 
-                <!-- Emails Tracker Content -->
                 <div id="emailsTracker" class="tracker-tab-content hidden">
                      <div class="bg-white rounded-lg shadow-md overflow-hidden">
                         <div class="overflow-x-auto">
@@ -504,9 +480,7 @@
                 </div>
             </div>
 
-            <!-- Dashboard Tab Content -->
             <div id="dashboardContent" class="tab-content h-full overflow-y-auto p-8 space-y-8 hidden">
-                <!-- Applications Section -->
                 <div>
                     <h2 class="text-2xl font-bold mb-4 text-gray-700">Applications Dashboard</h2>
                     <div id="app-kpi-cards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -545,7 +519,6 @@
                     </div>
                 </div>
                 <hr class="my-12 border-gray-300">
-                <!-- Emails Section -->
                 <div>
                     <h2 class="text-2xl font-bold mb-4 text-gray-700">Emails Dashboard</h2>
                     <div id="email-kpi-cards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -656,7 +629,6 @@
         const coverLetterWelcomeView = document.getElementById('coverLetterWelcomeView');
         const coverLetterWorkspace = document.getElementById('coverLetterWorkspace');
         const coverLetterWorkspaceTitle = document.getElementById('coverLetterWorkspaceTitle');
-        const clProjectsList = document.getElementById('clProjectsList');
         const clJobDescription = document.getElementById('clJobDescription');
         const clAdditionalDetails = document.getElementById('clAdditionalDetails');
         const clModelProvider = document.getElementById('clModelProvider');
@@ -772,7 +744,7 @@
                 }
             });
             
-            const showSidebar = ['applications', 'email', 'cover-letter'].includes(tabName);
+            const showSidebar = ['applications', 'email', 'coverLetter'].includes(tabName);
             sidebar.classList.toggle('hidden', !showSidebar);
             mainHeaderLogo.classList.toggle('hidden', showSidebar);
             sidebarExpander.classList.toggle('hidden', !showSidebar || !sidebar.classList.contains('collapsed'));
@@ -780,7 +752,7 @@
             if (tabName === 'email') {
                 selectApplicationForEmail(currentAppId);
             }
-            if (tabName === 'cover-letter') {
+            if (tabName === 'coverLetter') {
                 selectApplicationForCoverLetter(currentAppId);
             }
         }
@@ -1374,7 +1346,7 @@
                 selectApplicationForResume(appId);
             } else if (activeTab === 'email') {
                 selectApplicationForEmail(appId);
-            } else if (activeTab === 'cover-letter') {
+            } else if (activeTab === 'coverLetter') {
                 selectApplicationForCoverLetter(appId);
             }
         }
@@ -1443,19 +1415,18 @@
                 coverLetterWorkspace.classList.add('hidden');
                 return;
             }
+            coverLetterWelcomeView.classList.add('hidden');
+            coverLetterWorkspace.classList.remove('hidden');
+
             const app = allApplications.find(a => a.appId === appId);
             if (!app) return;
 
-            coverLetterWelcomeView.classList.add('hidden');
-            coverLetterWorkspace.classList.remove('hidden');
             coverLetterWorkspaceTitle.textContent = `${app.company} - ${app.role}`;
             
-            // Reset fields
             clJobDescription.innerHTML = '';
             clAdditionalDetails.value = '';
             coverLetterEditor.value = '';
             coverLetterPdfViewer.src = 'about:blank';
-            clProjectsList.innerHTML = '';
             generateCoverLetterBtn.disabled = true;
             saveCoverLetterBtn.disabled = true;
             downloadCoverLetterBtn.disabled = true;
@@ -1475,23 +1446,10 @@
                     coverLetterEditor.value = (details.coverLetter.generatedBody || '').replace(/\\n/g, '\n');
                 }
 
-                // Populate projects and enable button
                 if (details.finalizedResumeYaml) {
                     generateCoverLetterBtn.disabled = false;
-                    const resumeData = jsyaml.load(details.finalizedResumeYaml);
-                    if (resumeData.projects && resumeData.projects.length > 0) {
-                        clProjectsList.innerHTML = resumeData.projects.map(project => `
-                            <div class="p-3 border border-gray-200 rounded-lg bg-gray-50">
-                                <p class="font-semibold text-sm text-gray-800">${project.title}</p>
-                                ${project.bullets ? `<ul class="list-disc list-inside text-xs text-gray-600 mt-1 space-y-1">${project.bullets.map(b => `<li>${b.replace(/<b>|<\/b>/g, '')}</li>`).join('')}</ul>` : ''}
-                            </div>
-                        `).join('');
-                    } else {
-                        clProjectsList.innerHTML = '<p class="text-sm text-gray-500">No projects found in the finalized resume.</p>';
-                    }
                 } else {
                     clGenStatus.textContent = '⚠️ Please finalize a resume first.';
-                    clProjectsList.innerHTML = '<p class="text-sm text-gray-500">Finalize a resume to see projects.</p>';
                 }
 
                 if (details.coverLetter && details.coverLetter.pdfUrl) {
