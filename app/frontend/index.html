@@ -141,7 +141,10 @@
                     </div>
 
                     <div id="workspace" class="hidden h-full flex flex-col">
-                        <h2 id="workspaceTitle" class="text-3xl font-bold p-8 pb-0 flex-shrink-0"></h2>
+                        <div class="p-8 pb-0">
+                            <h2 id="workspaceTitle" class="text-3xl font-bold flex-shrink-0"></h2>
+                            <h3 id="workspaceSubTitle" class="text-lg text-gray-500 mt-1"></h3>
+                        </div>
                         
                         <div class="flex-grow grid grid-cols-1 lg:grid-cols-2 gap-8 p-8 overflow-hidden">
                             
@@ -236,7 +239,7 @@
                                         <button id="finalizeBtn" class="flex-1 bg-emerald-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-emerald-700 app-button" disabled>
                                             Finalize Resume
                                         </button>
-                                        <button id="trackApplicationBtn" class="flex-1 bg-sky-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-sky-700 app-button" disabled>
+                                        <button id="trackApplicationBtn" class="flex-1 bg-sky-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-sky-700 app-button">
                                             Track Application
                                         </button>
                                     </div>
@@ -261,7 +264,6 @@
                     <p class="text-gray-600 max-w-md">Select a finalized application from the list on the left to create a tailored cover letter.</p>
                 </div>
                 <div id="coverLetterWorkspace" class="h-full grid grid-cols-1 lg:grid-cols-2 gap-6 p-6 bg-gray-100 hidden">
-                    <!-- Left Column -->
                     <div class="bg-white p-6 rounded-lg shadow-md flex flex-col space-y-6 overflow-y-auto custom-scrollbar">
                         <h2 id="coverLetterWorkspaceTitle" class="text-2xl font-bold"></h2>
                         <div>
@@ -290,7 +292,6 @@
                         </div>
                     </div>
 
-                    <!-- Right Column -->
                     <div class="bg-white p-6 rounded-lg shadow-md flex flex-col">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="text-xl font-semibold">Cover Letter Preview</h3>
@@ -547,9 +548,18 @@
         const API_BASE_URL = 'http://localhost:8000';
 
         // --- Part 1: State & Constants ---
-        const APP_STATUS_OPTIONS = ["To Apply", "Waiting", "Finding", "Asking", "Applied", "Missed", "Rejected", "Received", "Interviewing"];
+        const APP_STATUS_OPTIONS = ["To Apply", "Ready to Apply", "Waiting", "Finding", "Asking", "Applied", "Missed", "Rejected", "Received", "Interviewing"];
         const APP_STATUS_COLORS = {
-            "To Apply": { bg: "bg-gray-100", text: "text-gray-800" }, "Waiting": { bg: "bg-yellow-100", text: "text-yellow-800" }, "Finding": { bg: "bg-blue-100", text: "text-blue-800" }, "Asking": { bg: "bg-indigo-100", text: "text-indigo-800" }, "Applied": { bg: "bg-green-100", text: "text-green-800" }, "Missed": { bg: "bg-orange-100", text: "text-orange-800" }, "Rejected": { bg: "bg-red-100", text: "text-red-800" }, "Received": { bg: "bg-purple-100", text: "text-purple-800" }, "Interviewing": { bg: "bg-teal-100", text: "text-teal-800" },
+            "To Apply": { bg: "bg-gray-100", text: "text-gray-800" },
+            "Ready to Apply": { bg: "bg-purple-100", text: "text-purple-800" },
+            "Waiting": { bg: "bg-yellow-100", text: "text-yellow-800" },
+            "Finding": { bg: "bg-blue-100", text: "text-blue-800" },
+            "Asking": { bg: "bg-indigo-100", text: "text-indigo-800" },
+            "Applied": { bg: "bg-green-100", text: "text-green-800" },
+            "Missed": { bg: "bg-orange-100", text: "text-orange-800" },
+            "Rejected": { bg: "bg-red-100", text: "text-red-800" },
+            "Received": { bg: "bg-purple-100", text: "text-purple-800" },
+            "Interviewing": { bg: "bg-teal-100", text: "text-teal-800" },
         };
         const EMAIL_STATUS_OPTIONS = ["Sent", "Replied", "Ghosted", "Follow-up 1", "Follow-up 2"];
         const EMAIL_STATUS_COLORS = {
@@ -588,6 +598,7 @@
         const createAppStatus = document.getElementById('createAppStatus');
         const workspace = document.getElementById('workspace');
         const workspaceTitle = document.getElementById('workspaceTitle');
+        const workspaceSubTitle = document.getElementById('workspaceSubTitle');
         const applicationList = document.getElementById('applicationList');
         const searchApplications = document.getElementById('searchApplications');
         
@@ -1236,7 +1247,6 @@
             const hasContent = !!resumeYaml;
 
             finalizeBtn.disabled = isFinalized || !hasContent;
-            trackApplicationBtn.disabled = !isFinalized;
             
             if (hasContent) {
                 const dataForForm = isFinalized ? originalForFinalizedView : jsyaml.load(resumeYaml);
@@ -1352,6 +1362,7 @@
             newAppForm.classList.add('hidden');
             workspace.classList.remove('hidden');
             workspaceTitle.textContent = `${app.company} - ${app.role}`;
+            workspaceSubTitle.textContent = app.jobId ? `Job ID: ${app.jobId}` : '';
             
             // Reset UI state
             pdfViewer.src = 'about:blank';
@@ -1361,7 +1372,7 @@
             fileNameDisplay.textContent = '';
             configFileUpload.value = '';
             finalizeBtn.disabled = true;
-            trackApplicationBtn.disabled = true;
+            trackApplicationBtn.disabled = false; // Enable track application button
             finalizeStatus.textContent = '';
 
             try {
@@ -1540,6 +1551,7 @@
                         <div class="app-details flex-grow overflow-hidden">
                             <div class="font-semibold truncate">${app.company}</div>
                             <div class="text-xs text-gray-500 truncate">${app.role}</div>
+                            ${app.jobId ? `<div class="text-xs text-gray-400 truncate">ID: ${app.jobId}</div>` : ''}
                         </div>
                     </div>
                     <div class="text-xs text-gray-400 font-medium app-details flex-shrink-0">${dateString}</div>
@@ -1611,7 +1623,7 @@
             try {
                 const payload = { companyName: company, roleTitle: role, jobId: jobIdInput.value.trim(), jobLink: jobLinkInput.value.trim() };
                 const data = await apiCall('/applications', 'POST', payload);
-                const newApp = { appId: data.appId, company: company, role: role, createdAt: Date.now() / 1000 };
+                const newApp = { appId: data.appId, company: company, role: role, jobId: payload.jobId, createdAt: Date.now() / 1000 };
                 allApplications.unshift(newApp);
                 handleAppSelection(data.appId);
                 showStatusMessage(createAppStatus, ''); // Clear status on success
@@ -1623,7 +1635,11 @@
         });
         searchApplications.addEventListener('input', (e) => {
             const searchTerm = e.target.value.toLowerCase();
-            const filteredApps = allApplications.filter(app => app.company.toLowerCase().includes(searchTerm) || app.role.toLowerCase().includes(searchTerm));
+            const filteredApps = allApplications.filter(app => 
+                app.company.toLowerCase().includes(searchTerm) || 
+                app.role.toLowerCase().includes(searchTerm) ||
+                (app.jobId && app.jobId.toLowerCase().includes(searchTerm))
+            );
             renderApplicationList(filteredApps);
         });
         
@@ -1713,7 +1729,8 @@
                 showStatusMessage(finalizeStatus, `✅ Added to tracker!`);
                 await refreshAllTrackers();
             } catch (error) {
-                showStatusMessage(finalizeStatus, `Tracking failed: ${error.message}`, true);
+                showStatusMessage(finalizeStatus, `Tracking failed: ${error.message}`, true)
+            } finally {
                 trackApplicationBtn.disabled = false;
             }
         });
@@ -1865,6 +1882,7 @@
             await trackerApi.addApp(newApp);
             trackerForm.reset();
             await refreshAllTrackers();
+            await initializeApp(); // Re-initialize to fetch new projects
         });
         applicationsTrackerTableBody.addEventListener('change', handleTrackerUpdate);
         applicationsTrackerTableBody.addEventListener('focusout', (e) => { if (e.target.tagName === 'INPUT') handleTrackerUpdate(e); });

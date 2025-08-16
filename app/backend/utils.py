@@ -1,7 +1,7 @@
 import os
 import yaml
 import copy
-from typing import Dict
+from typing import Dict, Optional
 
 # --- Constants ---
 APPLICATIONS_DIR = "/app/applications"
@@ -10,10 +10,13 @@ BASE_RESUME_PATH = "/app/base_resume_fixed.yaml"
 VARIABLES_PATH = "/app/variables.yaml"
 
 # --- Helper Functions ---
-def get_app_id(company_name: str, role_title: str) -> str:
-    """Creates a safe directory name from company and role titles."""
+def get_app_id(company_name: str, role_title: str, job_id: Optional[str] = None) -> str:
+    """Creates a safe directory name from company, role, and optional job ID."""
     safe_company = "".join(c if c.isalnum() else '_' for c in company_name)
     safe_role = "".join(c if c.isalnum() else '_' for c in role_title)
+    if job_id:
+        safe_job_id = "".join(c if c.isalnum() else '_' for c in job_id)
+        return f"{safe_company}_{safe_role}_{safe_job_id}"
     return f"{safe_company}_{safe_role}"
 
 def load_variables() -> Dict:

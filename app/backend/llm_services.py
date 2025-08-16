@@ -133,7 +133,7 @@ Generate a JSON structure containing ONLY the following keys: `summary`, `skills
     - **Inject industry context:** If the job description mentions a specific industry (e.g., finance, healthcare), you MUST invent details reflecting that context (e.g., "analyzed financial reports," "processed patient data") only if it aligns with the context. For example: there can be financial reports in beverages company, but it wont have access to healthcare records right.
     - For majority bullets, you must first articulate the business **problem** or **challenge**, then the **action** taken, and finally the **quantifiable result**.
     - **INVENT QUANTIFIABLE METRICS.** For majority bullets **MUST** include a plausible, impactful metric. Invent realistic ones if not provided. Examples: "reduced latency by 30%", "processed 500GB of data", "increased user engagement by 15%", "saved $50,000 in operational costs".
-    - Word Count: make the entire line is 135 characters. strict.
+    - Word Count: make the entire line is 140 characters. strict.
     - **Strategic Bolding**: Identify the most critical parts of each bullet points based on the bullet itself and the job description. Wrap these keywords in `<b>...</b>` tags. Use this sparingly—aim for 1-3 bolded phrases per bullet to maximize impact without cluttering the text. Dont focus on the reseults always. Highlighting actions are also important.
     - Number of Bullets:
         - DRINKS: 4 points
@@ -144,7 +144,7 @@ Generate a JSON structure containing ONLY the following keys: `summary`, `skills
 4.  **`projects_reordered`**:
     - **Follow all rules from the `experience_bullets` section:** Re-engineer the content to be heavily job-description-focused, inject industry context, use the PAR framework, and invent compelling, quantifiable metrics for each bullet.
     - Keep the original `title` and `dates` for each project.
-    - Each bullet must be under 140 characters.
+    - Each bullet must be under 150 characters.
     - Use strategic `<b>...</b>` bolding.
     - Only 2 bullets per project.
     - **You MUST process and return ALL projects** provided in the candidate's base information.
@@ -312,6 +312,7 @@ Draft a cover letter that tells a persuasive story, connecting the candidate's a
     - The JSON object must contain one key: `cover_letter_body`.
     - The value should be a single string containing the entire body of the cover letter, from the salutation to the final paragraph. Use `\\n\\n` for paragraph breaks.
     - **DO NOT** include the sign-off (e.g., "Yours sincerely,"), the candidate's name, or contact details. This will be appended programmatically.
+    - NO em dashes or hyphenated words. Human Tone.
 
 **Example Output:**
 ```json

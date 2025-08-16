@@ -4,6 +4,7 @@ import re
 import json
 import uuid
 import copy
+import shutil # <-- Import shutil for directory deletion
 from datetime import datetime
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
@@ -30,7 +31,7 @@ load_dotenv()
 app = FastAPI(
     title="ApplySmart Backend",
     description="Manages job applications, renders PDFs, and generates cold emails.",
-    version="19.0.0" # Version bump for cover letter fixes
+    version="22.0.0"
 )
 
 # --- CORS Middleware ---
@@ -261,6 +262,7 @@ def get_applications():
                 "appId": app_id, 
                 "company": details.get("companyName"), 
                 "role": details.get("roleTitle"),
+                "jobId": details.get("jobId"),
                 "createdAt": created_at 
             })
         else:
@@ -271,6 +273,7 @@ def get_applications():
                     "appId": app_id, 
                     "company": company_part.replace('_', ' '), 
                     "role": role_part.replace('_', ' '),
+                    "jobId": "",
                     "createdAt": created_at 
                 })
             except ValueError:
@@ -281,7 +284,7 @@ def get_applications():
 
 @app.post("/applications", response_model=Dict[str, str])
 def create_application(data: ApplicationData):
-    app_id = get_app_id(data.companyName, data.roleTitle)
+    app_id = get_app_id(data.companyName, data.roleTitle, data.jobId)
     app_path = os.path.join(APPLICATIONS_DIR, app_id)
     if os.path.exists(app_path): raise HTTPException(status_code=409, detail="Application already exists.")
     os.makedirs(app_path)
@@ -728,36 +731,35 @@ def track_application(app_id: str):
     details_path = os.path.join(app_path, "app_details.json")
     if not os.path.exists(details_path):
         raise HTTPException(status_code=404, detail="Application details not found.")
-    
+
     with open(details_path, 'r') as f:
         details = json.load(f)
-    
+
+    finalized_resume_path = os.path.join(app_path, "finalized_resume.yaml")
+    status = "Ready to Apply" if os.path.exists(finalized_resume_path) else "To Apply"
+
     apps = read_tracker_data(TRACKER_APPS_PATH)
-    
+
     company = details.get("companyName", "")
     role = details.get("roleTitle", "")
     jobId = details.get("jobId", "")
     jobLink = details.get("jobLink", "")
 
-    existing_item_index = -1
-    if jobId and jobId.strip():
-        existing_item_index = next((i for i, item in enumerate(apps) if item.get("jobId") == jobId), -1)
-    
-    if existing_item_index == -1:
-        existing_item_index = next((i for i, item in enumerate(apps) if item.get("company") == company and item.get("role") == role), -1)
+    # Find existing item based on a combination of company, role, and jobId
+    existing_item = next((item for item in apps if item.get("company") == company and item.get("role") == role and item.get("jobId") == jobId), None)
 
-    if existing_item_index != -1:
-        apps[existing_item_index]["jobLink"] = jobLink
-        apps[existing_item_index]["jobId"] = jobId
+    if existing_item:
+        existing_item["jobLink"] = jobLink
+        existing_item["status"] = status
         write_tracker_data(TRACKER_APPS_PATH, apps)
-        return apps[existing_item_index]
+        return existing_item
     else:
         new_app_item = TrackerApplicationItem(
             company=company,
             role=role,
             jobId=jobId,
             jobLink=jobLink,
-            status="To Apply"
+            status=status
         )
         apps.insert(0, new_app_item.dict())
         write_tracker_data(TRACKER_APPS_PATH, apps)
@@ -771,28 +773,31 @@ def get_tracker_applications():
 def add_tracker_application(item: TrackerApplicationItem):
     apps = read_tracker_data(TRACKER_APPS_PATH)
     
-    existing_item_index = -1
-    if item.jobId and item.jobId.strip():
-        existing_item_index = next((i for i, app in enumerate(apps) if app.get("jobId") == item.jobId), -1)
-        
-    if existing_item_index == -1:
-        existing_item_index = next((i for i, app in enumerate(apps) if app.get("company") == item.company and app.get("role") == item.role), -1)
+    # Create an empty project in the applications folder
+    app_id = get_app_id(item.company, item.role, item.jobId)
+    app_path = os.path.join(APPLICATIONS_DIR, app_id)
+    if not os.path.exists(app_path):
+        os.makedirs(app_path)
+        details_path = os.path.join(app_path, "app_details.json")
+        with open(details_path, 'w') as f:
+            json.dump({
+                "companyName": item.company,
+                "roleTitle": item.role,
+                "jobId": item.jobId,
+                "jobLink": item.jobLink
+            }, f, indent=2)
 
-    if existing_item_index != -1:
-        original_id = apps[existing_item_index]['id']
-        original_createdAt = apps[existing_item_index].get('createdAt')
-        
-        updated_data = apps[existing_item_index].copy()
-        updated_data.update(item.dict(exclude_unset=True))
-        
-        updated_data['id'] = original_id
-        if original_createdAt:
-            updated_data['createdAt'] = original_createdAt
-            
-        apps[existing_item_index] = updated_data
+    # Check for existing item more robustly
+    existing_item = next((app for app in apps if app.get("company") == item.company and app.get("role") == item.role and app.get("jobId") == item.jobId), None)
+
+    if existing_item:
+        # Update existing item
+        for key, value in item.dict(exclude_unset=True).items():
+            existing_item[key] = value
         write_tracker_data(TRACKER_APPS_PATH, apps)
-        return updated_data
+        return existing_item
     else:
+        # Add new item
         apps.insert(0, item.dict())
         write_tracker_data(TRACKER_APPS_PATH, apps)
         return item
@@ -816,11 +821,27 @@ def update_tracker_application(item_id: str, updated_item: TrackerApplicationIte
 @app.delete("/tracker/applications/{item_id}", status_code=204)
 def delete_tracker_application(item_id: str):
     apps = read_tracker_data(TRACKER_APPS_PATH)
-    initial_len = len(apps)
-    apps = [app for app in apps if app["id"] != item_id]
-    if len(apps) == initial_len:
-        raise HTTPException(status_code=404, detail="Application item not found")
-    write_tracker_data(TRACKER_APPS_PATH, apps)
+    app_to_delete = next((app for app in apps if app["id"] == item_id), None)
+    
+    if not app_to_delete:
+        raise HTTPException(status_code=404, detail="Application item not found in tracker.")
+
+    # Construct the app_id to find the directory
+    app_id = get_app_id(app_to_delete['company'], app_to_delete['role'], app_to_delete.get('jobId'))
+    app_path = os.path.join(APPLICATIONS_DIR, app_id)
+
+    # Delete the directory if it exists
+    if os.path.isdir(app_path):
+        try:
+            shutil.rmtree(app_path)
+        except OSError as e:
+            # Handle potential errors during deletion
+            raise HTTPException(status_code=500, detail=f"Failed to delete application folder: {e}")
+
+    # Remove the item from the tracker list
+    updated_apps = [app for app in apps if app["id"] != item_id]
+    write_tracker_data(TRACKER_APPS_PATH, updated_apps)
+    
     return
 
 @app.get("/tracker/emails", response_model=List[TrackerEmailItem])
