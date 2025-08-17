@@ -57,14 +57,6 @@
         .sort-icon.active { opacity: 1; color: #3b82f6; font-weight: bold;}
         .sort-icon-btn { cursor: pointer; opacity: 0.6; }
         .sort-icon-btn.active { opacity: 1; color: #3b82f6; font-weight: 600; }
-        
-        #coverLetterPreview {
-            font-family: 'Inter', sans-serif;
-            line-height: 1.6;
-        }
-        #coverLetterPreview p {
-            margin-bottom: 0.75rem;
-        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800 overflow-hidden">
@@ -254,6 +246,9 @@
                                         <button id="finalizeBtn" class="flex-1 bg-emerald-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-emerald-700 app-button" disabled>
                                             Finalize Resume
                                         </button>
+                                        <button id="downloadFinalizedResumeBtn" class="flex-1 bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 app-button hidden">
+                                            Download Resume
+                                        </button>
                                         <button id="trackApplicationBtn" class="flex-1 bg-sky-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-sky-700 app-button">
                                             Track Application
                                         </button>
@@ -318,14 +313,13 @@
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="text-xl font-semibold">Cover Letter Preview</h3>
                             <div class="flex items-center space-x-2">
+                                <button id="downloadCoverLetterBtn" class="bg-gray-600 text-white font-semibold py-2 px-3 rounded-lg hover:bg-gray-700 app-button" disabled>Download PDF</button>
                                 <button id="saveCoverLetterBtn" class="bg-blue-600 text-white font-semibold py-2 px-3 rounded-lg hover:bg-blue-700 app-button" disabled>Save</button>
                                 <p id="clSaveStatus" class="text-sm text-gray-600 h-5"></p>
                             </div>
                         </div>
-                        <div class="flex-grow flex flex-col gap-4 overflow-hidden">
-                            <div id="coverLetterPreview" class="w-full flex-grow border border-gray-200 rounded-md p-3 bg-white overflow-y-auto custom-scrollbar min-h-[300px]">
-                                <p class="text-gray-500 text-center mt-20">Generated cover letter will appear here...</p>
-                            </div>
+                        <div id="coverLetterViewerContainer" class="w-full flex-grow border border-gray-300 rounded-lg bg-gray-200">
+                            <iframe id="coverLetterViewer" class="w-full h-full" frameborder="0"></iframe>
                         </div>
                     </div>
                 </div>
@@ -532,7 +526,7 @@
                         <div class="bg-white p-5 rounded-lg shadow-md flex items-center">
                             <div class="bg-green-100 text-green-600 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div>
                             <div class="ml-4">
-                                <p class="text-sm text-gray-500">Interviewing</p>
+                                <p class="text-sm text-gray-500">Applied</p>
                                 <p id="kpiAppInterviewing" class="text-2xl font-semibold">0</p>
                             </div>
                         </div>
@@ -617,6 +611,7 @@
         let globalDefaultVars = {};
         let appSpecificVars = {};
         let renderTimeout;
+        let detailSaveTimeout;
         let appStatusChartInstance, appTimelineChartInstance, emailStatusChartInstance, emailTimelineChartInstance;
         let appSortConfig = { field: 'createdAt', direction: 'desc' };
         let trackerSortConfig = { field: 'lastUpdatedAt', direction: 'desc' };
@@ -671,6 +666,7 @@
         const versionSelectorContainer = document.getElementById('versionSelectorContainer');
         const contentSelectionPlaceholder = document.getElementById('contentSelectionPlaceholder');
         const formattingContent = document.getElementById('formattingContent');
+        const downloadFinalizedResumeBtn = document.getElementById('downloadFinalizedResumeBtn');
 
         const coverLetterWelcomeView = document.getElementById('coverLetterWelcomeView');
         const coverLetterWorkspace = document.getElementById('coverLetterWorkspace');
@@ -679,11 +675,12 @@
         const clContactEmail = document.getElementById('clContactEmail');
         const clAdditionalDetails = document.getElementById('clAdditionalDetails');
         const clModelProvider = document.getElementById('clModelProvider');
-        const coverLetterPreview = document.getElementById('coverLetterPreview');
+        const coverLetterViewer = document.getElementById('coverLetterViewer');
         const generateCoverLetterBtn = document.getElementById('generateCoverLetterBtn');
         const clSpinner = document.getElementById('clSpinner');
         const clGenStatus = document.getElementById('clGenStatus');
         const saveCoverLetterBtn = document.getElementById('saveCoverLetterBtn');
+        const downloadCoverLetterBtn = document.getElementById('downloadCoverLetterBtn');
         const clSaveStatus = document.getElementById('clSaveStatus');
 
         const emailWelcomeView = document.getElementById('emailWelcomeView');
@@ -767,23 +764,22 @@
             }, duration);
         }
 
-        function renderCoverLetterPreview(coverLetterBody, selectedEmail, candidateName = 'Sri Manikesh Makam') {
-            if (!coverLetterBody) {
-                coverLetterPreview.innerHTML = '<p class="text-gray-500 text-center mt-20">Generated cover letter will appear here...</p>';
+        async function renderCoverLetterPreviewPdf() {
+            if (!currentAppId || !currentCoverLetterBody) {
+                coverLetterViewer.src = 'about:blank';
                 return;
             }
-
-            const preview = `
-                <div class="text-sm leading-relaxed space-y-4">
-                    ${coverLetterBody.replace(/\n\n/g, '</div><div class="text-sm leading-relaxed space-y-4">').replace(/\n/g, '<br>')}
-                    <div class="mt-8">
-                        <p>Yours sincerely,</p>
-                        <p class="font-semibold mt-2">${candidateName}</p>
-                        <p class="text-blue-600 mt-1">${selectedEmail}</p>
-                    </div>
-                </div>
-            `;
-            coverLetterPreview.innerHTML = preview;
+            try {
+                const payload = {
+                    coverLetterText: currentCoverLetterBody,
+                    contactEmail: clContactEmail.value
+                };
+                const pdfBlob = await apiCall(`/applications/${currentAppId}/render-cover-letter-preview`, 'POST', payload, true);
+                coverLetterViewer.src = URL.createObjectURL(pdfBlob);
+            } catch (error) {
+                showStatusMessage(clGenStatus, `Preview failed: ${error.message}`, true);
+                coverLetterViewer.src = 'about:blank';
+            }
         }
         
         function switchTab(tabName) {
@@ -1032,8 +1028,8 @@
 
         function updateDashboard(applications, emails) {
             document.getElementById('kpiAppTotal').textContent = applications.length;
-            document.getElementById('kpiAppInterviewing').textContent = applications.filter(a => a.status === 'Interviewing').length;
-            document.getElementById('kpiAppPending').textContent = applications.filter(a => !['Interviewing', 'Rejected', 'Received', 'Missed'].includes(a.status)).length;
+            document.getElementById('kpiAppInterviewing').textContent = applications.filter(a => a.status === 'Applied').length;
+            document.getElementById('kpiAppPending').textContent = applications.filter(a => !['Applied', 'Rejected', 'Received', 'Missed'].includes(a.status)).length;
             document.getElementById('kpiAppRejected').textContent = applications.filter(a => a.status === 'Rejected').length;
 
             document.getElementById('kpiEmailTotal').textContent = emails.length;
@@ -1044,18 +1040,38 @@
                 return acc;
             }, {});
             if (appStatusChartInstance) appStatusChartInstance.destroy();
-            appStatusChartInstance = new Chart(document.getElementById('appStatusChart').getContext('2d'), { type: 'doughnut', data: { labels: APP_STATUS_OPTIONS, datasets: [{ data: Object.values(appStatusCounts), backgroundColor: APP_STATUS_OPTIONS.map(s => APP_STATUS_COLORS[s].bg.replace('bg-', 'rgba(').replace('-100', ', 0.6)')) }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+            appStatusChartInstance = new Chart(document.getElementById('appStatusChart').getContext('2d'), { type: 'doughnut', data: { labels: APP_STATUS_OPTIONS, datasets: [{ data: Object.values(appStatusCounts), backgroundColor: APP_STATUS_OPTIONS.map(s => {
+                const color = APP_STATUS_COLORS[s].bg;
+                if (color === 'bg-gray-100') return 'rgba(107, 114, 128, 1)';      // Dark gray
+                if (color === 'bg-purple-100') return 'rgba(147, 51, 234, 1)';    // Purple
+                if (color === 'bg-yellow-100') return 'rgba(245, 158, 11, 1)';   // Orange
+                if (color === 'bg-blue-100') return 'rgba(59, 130, 246, 1)';     // Blue
+                if (color === 'bg-indigo-100') return 'rgba(99, 102, 241, 1)';  // Indigo
+                if (color === 'bg-green-100') return 'rgba(34, 197, 94, 1)';    // Green
+                if (color === 'bg-orange-100') return 'rgba(249, 115, 22, 1)';  // Dark orange
+                if (color === 'bg-red-100') return 'rgba(239, 68, 68, 1)';      // Red
+                if (color === 'bg-teal-100') return 'rgba(20, 184, 166, 1)';   // Teal
+                return 'rgba(156, 163, 175, 1)'; // fallback
+            }) }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true } } } });
 
-            const appTimelineData = getTimelineData(applications);
+            const appTimelineData = getAppliedTimelineData(applications);
             if (appTimelineChartInstance) appTimelineChartInstance.destroy();
-            appTimelineChartInstance = new Chart(document.getElementById('appTimelineChart').getContext('2d'), { type: 'bar', data: { labels: appTimelineData.labels, datasets: [{ label: 'Apps per Week', data: appTimelineData.counts, backgroundColor: 'rgba(59, 130, 246, 0.5)' }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } } });
+            appTimelineChartInstance = new Chart(document.getElementById('appTimelineChart').getContext('2d'), { type: 'bar', data: { labels: appTimelineData.labels, datasets: [{ label: 'Applied per Week', data: appTimelineData.counts, backgroundColor: 'rgba(59, 130, 246, 0.5)' }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } } });
 
             const emailStatusCounts = EMAIL_STATUS_OPTIONS.reduce((acc, status) => {
                 acc[status] = emails.filter(e => e.status === status).length;
                 return acc;
             }, {});
             if (emailStatusChartInstance) emailStatusChartInstance.destroy();
-            emailStatusChartInstance = new Chart(document.getElementById('emailStatusChart').getContext('2d'), { type: 'doughnut', data: { labels: EMAIL_STATUS_OPTIONS, datasets: [{ data: Object.values(emailStatusCounts), backgroundColor: EMAIL_STATUS_OPTIONS.map(s => EMAIL_STATUS_COLORS[s].bg.replace('bg-', 'rgba(').replace('-100', ', 0.6)')) }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+            emailStatusChartInstance = new Chart(document.getElementById('emailStatusChart').getContext('2d'), { type: 'doughnut', data: { labels: EMAIL_STATUS_OPTIONS, datasets: [{ data: Object.values(emailStatusCounts), backgroundColor: EMAIL_STATUS_OPTIONS.map(s => {
+                const color = EMAIL_STATUS_COLORS[s].bg;
+                if (color === 'bg-blue-100') return 'rgba(59, 130, 246, 1)';      // Blue
+                if (color === 'bg-green-100') return 'rgba(34, 197, 94, 1)';     // Green
+                if (color === 'bg-gray-100') return 'rgba(107, 114, 128, 1)';    // Dark gray
+                if (color === 'bg-yellow-100') return 'rgba(245, 158, 11, 1)';   // Orange
+                if (color === 'bg-orange-100') return 'rgba(249, 115, 22, 1)';   // Dark orange
+                return 'rgba(156, 163, 175, 1)'; // fallback
+            }) }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true } } } });
 
             const emailTimelineData = getTimelineData(emails);
             if (emailTimelineChartInstance) emailTimelineChartInstance.destroy();
@@ -1067,6 +1083,19 @@
             items.forEach(item => {
                 if (!item.createdAt) return;
                 const date = new Date(item.createdAt);
+                const weekStartDate = new Date(date.setDate(date.getDate() - date.getDay() + (date.getDay() === 0 ? -6 : 1)));
+                const weekStart = weekStartDate.toISOString().split('T')[0];
+                data[weekStart] = (data[weekStart] || 0) + 1;
+            });
+            const sortedWeeks = Object.keys(data).sort();
+            return { labels: sortedWeeks, counts: sortedWeeks.map(week => data[week]) };
+        }
+
+        function getAppliedTimelineData(applications) {
+            const data = {};
+            applications.forEach(app => {
+                if (!app.createdAt || app.status !== 'Applied') return;
+                const date = new Date(app.createdAt);
                 const weekStartDate = new Date(date.setDate(date.getDate() - date.getDay() + (date.getDay() === 0 ? -6 : 1)));
                 const weekStart = weekStartDate.toISOString().split('T')[0];
                 data[weekStart] = (data[weekStart] || 0) + 1;
@@ -1483,6 +1512,7 @@
             finalizeBtn.disabled = true;
             trackApplicationBtn.disabled = false;
             finalizeStatus.textContent = '';
+            downloadFinalizedResumeBtn.classList.add('hidden');
 
             try {
                 const [details, defaultVars] = await Promise.all([
@@ -1508,6 +1538,10 @@
                     yamlToLoad = details.finalizedResumeYaml;
                     const originalForFinalizedView = details.resumeYaml ? jsyaml.load(details.resumeYaml) : jsyaml.load(yamlToLoad);
                     updateUIWithNewResume(yamlToLoad, true, originalForFinalizedView);
+                    if (details.finalizedPdfUrl) {
+                        downloadFinalizedResumeBtn.classList.remove('hidden');
+                        downloadFinalizedResumeBtn.onclick = () => window.open(`${API_BASE_URL}${details.finalizedPdfUrl}`);
+                    }
                 } else {
                     versionToLoad = versions.length > 0 ? versions[0] : null;
                     yamlToLoad = details.resumeYaml;
@@ -1540,9 +1574,10 @@
             currentCoverLetterBody = '';
             generateCoverLetterBtn.disabled = true;
             saveCoverLetterBtn.disabled = true;
+            downloadCoverLetterBtn.disabled = true;
             clGenStatus.textContent = '';
             clSaveStatus.textContent = '';
-            renderCoverLetterPreview('');
+            coverLetterViewer.src = 'about:blank';
 
             try {
                 const details = await apiCall(`/applications/${appId}`);
@@ -1552,7 +1587,6 @@
                     clAdditionalDetails.value = details.coverLetter.additionalDetails || '';
                     const coverLetterBody = (details.coverLetter.generatedBody || '').replace(/\\n/g, '\n');
                     currentCoverLetterBody = coverLetterBody;
-                    renderCoverLetterPreview(coverLetterBody, clContactEmail.value);
                 }
 
                 if (details.selectedContactEmail) {
@@ -1563,9 +1597,7 @@
                         if (resumeData.contact && resumeData.contact.email) {
                             clContactEmail.value = resumeData.contact.email;
                         }
-                    } catch (e) {
-                        console.log('Could not parse resume YAML for email');
-                    }
+                    } catch (e) { console.log('Could not parse resume YAML for email'); }
                 }
 
                 if (details.finalizedResumeYaml) {
@@ -1575,9 +1607,17 @@
                     clGenStatus.className = 'text-sm text-yellow-600 h-5';
                 }
 
-                if (details.coverLetter && details.coverLetter.generatedBody) {
+                if (currentCoverLetterBody) {
                     saveCoverLetterBtn.disabled = false;
+                    await renderCoverLetterPreviewPdf();
                 }
+                
+                                 if (details.coverLetter && details.coverLetter.pdfUrl) {
+                     downloadCoverLetterBtn.disabled = false;
+                     downloadCoverLetterBtn.onclick = () => window.open(`${API_BASE_URL}${details.coverLetter.pdfUrl}`);
+                 } else {
+                     downloadCoverLetterBtn.disabled = true;
+                 }
 
             } catch (error) {
                 showStatusMessage(clGenStatus, `Error loading details: ${error.message}`, true);
@@ -1916,10 +1956,29 @@
             showStatusMessage(configStatus, 'Formatting reset to project default.');
         });
 
-        clContactEmail.addEventListener('change', () => {
-            if (currentCoverLetterBody) {
-                renderCoverLetterPreview(currentCoverLetterBody, clContactEmail.value);
+        async function saveCoverLetterDetails() {
+            if (!currentAppId) return;
+            try {
+                const payload = {
+                    additionalDetails: clAdditionalDetails.value.trim(),
+                    contactEmail: clContactEmail.value
+                };
+                await apiCall(`/applications/${currentAppId}/save-cover-letter-details`, 'POST', payload);
+                // Keep download button disabled until cover letter is actually saved
+                downloadCoverLetterBtn.disabled = true;
+            } catch (error) {
+                console.error("Failed to save cover letter details:", error);
             }
+        }
+
+        clContactEmail.addEventListener('change', async () => {
+            await saveCoverLetterDetails();
+            await renderCoverLetterPreviewPdf();
+        });
+
+        clAdditionalDetails.addEventListener('input', () => {
+            clearTimeout(detailSaveTimeout);
+            detailSaveTimeout = setTimeout(saveCoverLetterDetails, 500);
         });
 
         generateCoverLetterBtn.addEventListener('click', async () => {
@@ -1936,9 +1995,12 @@
                 const response = await apiCall(`/applications/${currentAppId}/generate-cover-letter`, 'POST', payload);
                 const coverLetterBody = response.cover_letter_body.replace(/\\n/g, '\n');
                 currentCoverLetterBody = coverLetterBody;
-                renderCoverLetterPreview(coverLetterBody, clContactEmail.value);
+                
+                await renderCoverLetterPreviewPdf();
+
                 showStatusMessage(clGenStatus, '✅ Generation successful!');
                 saveCoverLetterBtn.disabled = false;
+                downloadCoverLetterBtn.disabled = true; // Disable download until saved
                 await refreshApplicationList();
             } catch (error) {
                 showStatusMessage(clGenStatus, `Generation failed: ${error.message}`, true);
@@ -1949,12 +2011,17 @@
         });
 
         saveCoverLetterBtn.addEventListener('click', async () => {
-            if (!currentAppId) return;
+            if (!currentAppId || !currentCoverLetterBody) return;
             saveCoverLetterBtn.disabled = true;
             try {
                 const payload = { coverLetterText: currentCoverLetterBody };
-                await apiCall(`/applications/${currentAppId}/save-cover-letter`, 'POST', payload);
-                showStatusMessage(clSaveStatus, '✅ Saved! PDF has been generated.');
+                const response = await apiCall(`/applications/${currentAppId}/save-cover-letter`, 'POST', payload);
+                showStatusMessage(clSaveStatus, '✅ Saved! Cover letter and configuration updated.');
+                
+                // Enable download button after saving
+                downloadCoverLetterBtn.disabled = false;
+                downloadCoverLetterBtn.onclick = () => window.open(`${API_BASE_URL}${response.pdfUrl}`);
+
                 await refreshApplicationList();
             } catch (error) {
                 showStatusMessage(clSaveStatus, `Save failed: ${error.message}`, true);

@@ -82,6 +82,14 @@ class CoverLetterGenerationRequest(BaseModel):
 class SaveCoverLetterRequest(BaseModel):
     coverLetterText: str
 
+class CoverLetterDetails(BaseModel):
+    additionalDetails: Optional[str] = ""
+    contactEmail: Optional[str] = ""
+
+class CoverLetterPreviewRequest(BaseModel):
+    coverLetterText: str
+    contactEmail: str
+
 class TrackerApplicationItem(BaseModel):
     id: str = Field(default_factory=lambda: f"app_{uuid.uuid4().hex}")
     company: str
@@ -641,7 +649,48 @@ def generate_cover_letter(app_id: str, request: CoverLetterGenerationRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate cover letter: {str(e)}")
 
-@app.post("/applications/{app_id}/save-cover-letter", response_model=Dict[str, str])
+@app.post("/applications/{app_id}/save-cover-letter-details", response_model=Dict[str, str])
+def save_cover_letter_details(app_id: str, details: CoverLetterDetails):
+    app_path = os.path.join(APPLICATIONS_DIR, app_id)
+    if not os.path.isdir(app_path):
+        raise HTTPException(status_code=404, detail="Application not found.")
+    
+    update_app_details(app_path, {
+        "coverLetterAdditionalDetails": details.additionalDetails,
+        "selectedContactEmail": details.contactEmail
+    })
+    update_application_timestamp(app_id)
+    return {"message": "Cover letter details saved."}
+
+@app.post("/applications/{app_id}/render-cover-letter-preview")
+def render_cover_letter_preview(app_id: str, request: CoverLetterPreviewRequest):
+    app_path = os.path.join(APPLICATIONS_DIR, app_id)
+    if not os.path.isdir(app_path):
+        raise HTTPException(status_code=404, detail="Application not found.")
+
+    try:
+        with open(BASE_RESUME_PATH, 'r', encoding='utf-8') as f:
+            base_resume_data = yaml.safe_load(f)
+
+        contact_info = base_resume_data.get('contact', {}).copy()
+        if request.contactEmail:
+            contact_info['email'] = request.contactEmail
+        
+        candidate_name = base_resume_data.get('name', 'Candidate')
+        
+        variables = load_variables()
+        pdf_generator = CoverLetterPDFGenerator(variables=variables)
+        
+        preview_pdf_path = os.path.join(app_path, "cover_letter_preview.pdf")
+        
+        pdf_generator.generate_pdf(request.coverLetterText, contact_info, preview_pdf_path, candidate_name)
+
+        return FileResponse(preview_pdf_path, media_type='application/pdf', filename=f"{app_id}_cover_letter_preview.pdf")
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to render cover letter preview: {str(e)}")
+
+@app.post("/applications/{app_id}/save-cover-letter", response_model=Dict[str, Any])
 def save_cover_letter(app_id: str, request: SaveCoverLetterRequest):
     app_path = os.path.join(APPLICATIONS_DIR, app_id)
     if not os.path.isdir(app_path):
@@ -651,7 +700,6 @@ def save_cover_letter(app_id: str, request: SaveCoverLetterRequest):
         with open(BASE_RESUME_PATH, 'r', encoding='utf-8') as f:
             base_resume_data = yaml.safe_load(f)
         
-        # Get the selected email from app details, or fall back to base resume
         details_path = os.path.join(app_path, "app_details.json")
         selected_email = ""
         if os.path.exists(details_path):
@@ -659,7 +707,7 @@ def save_cover_letter(app_id: str, request: SaveCoverLetterRequest):
                 details = json.load(f)
                 selected_email = details.get("selectedContactEmail", "")
         
-        contact_info = base_resume_data.get('contact', {})
+        contact_info = base_resume_data.get('contact', {}).copy()
         if selected_email:
             contact_info['email'] = selected_email
         
@@ -678,7 +726,7 @@ def save_cover_letter(app_id: str, request: SaveCoverLetterRequest):
         pdf_generator = CoverLetterPDFGenerator(variables=variables)
         pdf_generator.generate_pdf(request.coverLetterText, contact_info, pdf_path, candidate_name)
         update_application_timestamp(app_id)
-        return {"message": "Cover letter saved and PDF updated."}
+        return {"message": "Cover letter saved and PDF updated.", "pdfUrl": f"/applications/{app_id}/cover-letter-pdf"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save cover letter: {str(e)}")
 
@@ -751,8 +799,9 @@ def get_tracker_applications():
     for app in apps_data:
         app_id = get_app_id(app.get("company"), app.get("role"), app.get("jobId"))
         app_path = os.path.join(APPLICATIONS_DIR, app_id)
-        mtime = os.path.getmtime(app_path)
-        app["lastUpdatedAt"] = datetime.fromtimestamp(mtime).isoformat()
+        if os.path.exists(app_path):
+            mtime = os.path.getmtime(app_path)
+            app["lastUpdatedAt"] = datetime.fromtimestamp(mtime).isoformat()
     return apps_data
 
 @app.post("/tracker/applications", response_model=TrackerApplicationItem)

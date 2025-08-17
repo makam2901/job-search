@@ -222,10 +222,8 @@ class CoverLetterPDFGenerator:
         doc = SimpleDocTemplate(output_file, pagesize=letter, rightMargin=inch, leftMargin=inch, topMargin=inch, bottomMargin=inch)
         story = []
         
-        # Split text into paragraphs based on one or more empty lines (to handle different newline conventions)
         paragraphs = re.split(r'\n\s*\n', body_text.strip())
         for para_text in paragraphs:
-            # Replace remaining single newlines with <br/> for line breaks within a paragraph
             formatted_para = para_text.replace('\n', '<br/>')
             story.append(Paragraph(formatted_para, self.styles['CoverLetterBody']))
         
@@ -234,7 +232,6 @@ class CoverLetterPDFGenerator:
         story.append(Spacer(1, 0.2 * inch))
         story.append(Paragraph(candidate_name, self.styles['Signature']))
 
-        # Contact Info
         contact_parts = []
         if 'email' in contact_info: contact_parts.append(f'<link href="mailto:{contact_info["email"]}" color="blue">{contact_info["email"]}</link>')
         if 'phone' in contact_info: contact_parts.append(f'<link href="tel:{contact_info["phone"]}" color="blue">{contact_info["phone"]}</link>')
@@ -243,7 +240,6 @@ class CoverLetterPDFGenerator:
         if contact_line:
             story.append(Paragraph(contact_line, self.styles['Signature']))
 
-        # Social Links
         social_parts = []
         if 'linkedin' in contact_info: social_parts.append(f'<link href="{contact_info["linkedin"]}" color="blue">LinkedIn</link>')
         if 'github' in contact_info: social_parts.append(f'<link href="{contact_info["github"]}" color="blue">Github</link>')
