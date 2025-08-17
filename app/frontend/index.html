@@ -613,6 +613,7 @@
         let trackedApplications = [];
         let currentAppId = null;
         let currentResumeYaml = '';
+        let currentCoverLetterBody = '';
         let globalDefaultVars = {};
         let appSpecificVars = {};
         let renderTimeout;
@@ -682,7 +683,6 @@
         const generateCoverLetterBtn = document.getElementById('generateCoverLetterBtn');
         const clSpinner = document.getElementById('clSpinner');
         const clGenStatus = document.getElementById('clGenStatus');
-        const coverLetterEditor = document.getElementById('coverLetterEditor');
         const saveCoverLetterBtn = document.getElementById('saveCoverLetterBtn');
         const clSaveStatus = document.getElementById('clSaveStatus');
 
@@ -1537,11 +1537,12 @@
             
             clJobDescription.innerHTML = '';
             clAdditionalDetails.value = '';
-            coverLetterEditor.value = '';
+            currentCoverLetterBody = '';
             generateCoverLetterBtn.disabled = true;
             saveCoverLetterBtn.disabled = true;
             clGenStatus.textContent = '';
             clSaveStatus.textContent = '';
+            renderCoverLetterPreview('');
 
             try {
                 const details = await apiCall(`/applications/${appId}`);
@@ -1550,11 +1551,10 @@
                 if (details.coverLetter) {
                     clAdditionalDetails.value = details.coverLetter.additionalDetails || '';
                     const coverLetterBody = (details.coverLetter.generatedBody || '').replace(/\\n/g, '\n');
-                    coverLetterEditor.value = coverLetterBody;
+                    currentCoverLetterBody = coverLetterBody;
                     renderCoverLetterPreview(coverLetterBody, clContactEmail.value);
                 }
 
-                // Set the selected email if available, otherwise use the current resume's email
                 if (details.selectedContactEmail) {
                     clContactEmail.value = details.selectedContactEmail;
                 } else if (details.resumeYaml) {
@@ -1916,11 +1916,9 @@
             showStatusMessage(configStatus, 'Formatting reset to project default.');
         });
 
-        // Update cover letter preview when email changes
         clContactEmail.addEventListener('change', () => {
-            const coverLetterBody = coverLetterEditor.value;
-            if (coverLetterBody) {
-                renderCoverLetterPreview(coverLetterBody, clContactEmail.value);
+            if (currentCoverLetterBody) {
+                renderCoverLetterPreview(currentCoverLetterBody, clContactEmail.value);
             }
         });
 
@@ -1937,7 +1935,7 @@
                 };
                 const response = await apiCall(`/applications/${currentAppId}/generate-cover-letter`, 'POST', payload);
                 const coverLetterBody = response.cover_letter_body.replace(/\\n/g, '\n');
-                coverLetterEditor.value = coverLetterBody;
+                currentCoverLetterBody = coverLetterBody;
                 renderCoverLetterPreview(coverLetterBody, clContactEmail.value);
                 showStatusMessage(clGenStatus, '✅ Generation successful!');
                 saveCoverLetterBtn.disabled = false;
@@ -1954,9 +1952,7 @@
             if (!currentAppId) return;
             saveCoverLetterBtn.disabled = true;
             try {
-                // Get the complete cover letter content from the preview
-                const completeCoverLetter = coverLetterPreview.innerText;
-                const payload = { coverLetterText: completeCoverLetter };
+                const payload = { coverLetterText: currentCoverLetterBody };
                 await apiCall(`/applications/${currentAppId}/save-cover-letter`, 'POST', payload);
                 showStatusMessage(clSaveStatus, '✅ Saved! PDF has been generated.');
                 await refreshApplicationList();
