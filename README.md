@@ -69,24 +69,37 @@ This tab helps you create a compelling, AI-generated cover letter based on your 
 
 - <u>**Application Selection**</u>: To begin, select a project from the sidebar. This feature requires a finalized resume, so it will only activate for projects where you have completed Step 5 in the `Applications` tab.
 
+- <u>**Job Description Display**</u>: The saved job description automatically loads and displays in a read-only format for reference.
+
+- <u>**Contact Email Selection**</u>: Choose from multiple email addresses (e.g., different professional emails) to include in your cover letter signature.
+
 - <u>**AI-Powered Drafting**</u>: The tool automatically pulls your finalized resume data and the saved job description. You can add extra instructions or points of emphasis for the AI.
 
 - <u>**Content Generation**</u>: Click Generate Cover Letter, and the AI will write a full-length cover letter that creates a persuasive narrative, connecting your key achievements to the employer's needs.
 
-- <u>**Review and Save**</u>: The generated text appears in an editor where you can make final adjustments. Once satisfied, clicking Save will create a `CoverLetter_{Your_Name}`.pdf file within your project folder.
+- <u>**Live PDF Preview**</u>: View the complete cover letter with proper formatting, signature, and selected email address in a PDF-like preview.
+
+- <u>**Real-time Updates**</u>: Change the contact email or additional details to see the preview update immediately without regenerating content.
+
+- <u>**Review and Save**</u>: The generated text appears in a preview where you can see the final formatted version. Once satisfied, clicking Save will create a `CoverLetter_{Your_Name}`.pdf file within your project folder.
+
+- <u>**Download PDF**</u>: After saving, download the finalized cover letter PDF for your application.
 
 #### <u>User Journey Example (Cover Letter Tab)</u>:
 
 9. Now that his resume for "Innovate Inc." is finalized, Alex clicks on the `Cover Letter` tab.
 10. The workspace loads, automatically pulling in the job description for the Data Scientist role.
-11. In the `Additional Details` text box, he writes, "Please highlight my experience in deploying models on GCP, as mentioned in the projects."
-12. He clicks Generate Cover Letter. The AI drafts a professional letter that tells a story about his past successes and explicitly links them to the requirements in the job description.
-13. Alex reads the generated letter, is pleased with the result, and clicks Save. A polished CoverLetter_Alex.pdf is immediately saved to his project directory, ready for the application.
-### 2.2 Cold Email Generation (`Email` Tab)
+11. He selects his preferred contact email from the dropdown (he has multiple professional emails for different purposes).
+12. In the `Additional Details` text box, he writes, "Please highlight my experience in deploying models on GCP, as mentioned in the projects."
+13. He clicks Generate Cover Letter. The AI drafts a professional letter that tells a story about his past successes and explicitly links them to the requirements in the job description.
+14. Alex sees the complete cover letter preview with his signature and selected email address. He can change the email dropdown to see how it looks with different contact information.
+15. Satisfied with the result, he clicks Save to generate the final PDF. A polished CoverLetter_Alex.pdf is immediately saved to his project directory.
+16. He then clicks Download PDF to get the file ready for his application.
+### 2.3 Cold Email Generation (`Email` Tab)
 This tab helps you craft personalized outreach emails for your finalized applications.
 
 - <u>**Application Selection**</u>: Select a finalized application from the sidebar. The tool will automatically pull the corresponding job and resume data.
-- Contact Details: Enter the name, email, and LinkedIn URL of the recruiter or hiring manager.
+- <u>**Contact Details**</u>: Enter the name, email, and LinkedIn URL of the recruiter or hiring manager.
 - <u>**AI-Powered Generation**</u>: The AI uses the contact's LinkedIn profile (if provided), the job description, and your finalized resume to generate a personalized cold email that highlights your most relevant qualifications.
 - <u>**Email Composer**</u>: The generated subject and body appear in an editable composer, allowing you to make final tweaks.
 - <u>**Actions**</u>:
@@ -104,7 +117,7 @@ This tab helps you craft personalized outreach emails for your finalized applica
 19. He then clicks `Open in Email Client`, which opens his default mail app with the recipient, subject, and body pre-filled. He attaches the resume and sends the email.
 20. Back in ApplySmart, he clicks `Track Email` to log the outreach in the tracker.
 
-### 2.3 Favorites (`Favorites` Tab)
+### 2.4 Favorites (`Favorites` Tab)
 
 A simple tool to keep track of companies you are particularly interested in.
 
@@ -116,12 +129,15 @@ A simple tool to keep track of companies you are particularly interested in.
 21. Impressed by Innovate Inc.'s work, Alex navigates to the Favorites tab and adds "Innovate Inc." to his list of target companies.
 22. The next morning, as part of his routine, he visits the Favorites tab and checks the box next to "Innovate Inc." to mark that he has checked their career page for new roles today.
 
-### 2.4 Application & Email Tracking (`Tracker` Tab)
+### 2.5 Application & Email Tracking (`Tracker` Tab)
 
 A central dashboard to monitor the status of all your job-seeking activities.
 
 - <u>**Dual Views**</u>: Switch between an `Applications` table and an `Emails` table.
-- <u>**Editable Tables**</u>: All fields in the tables are directly editable. You can update the status (e.g., from `Applied` to `Interviewing`), add contact names, or update links on the fly.
+- <u>**Editable Tables**</u>: All fields in the tables are directly editable. You can update the status (e.g., from `To Apply` to `Applied`), add contact names, or update links on the fly.
+- <u>**Real-time Sorting & Filtering**</u>: Sort applications by company, role, status, or last updated date. Filter by any field to quickly find specific applications.
+- <u>**Automatic Timestamp Updates**</u>: The "Last Updated" timestamp automatically syncs between the Applications sidebar and Tracker tab, ensuring consistency across the platform.
+- <u>**Quick Navigation**</u>: Click the "Go to Application" button in the tracker to jump directly to the corresponding resume project.
 - <u>**Manual Entry**</u>: A form is provided to manually add applications to the tracker that weren't created through a Resume Project.
 
 #### <u>User Journey Example (`Tracker` Tab)</u>:
@@ -131,21 +147,23 @@ A central dashboard to monitor the status of all your job-seeking activities.
 25. He then clicks the `Emails` sub-tab and sees the email to Jane Doe has been logged automatically. Its status is `Sent`.
 26. A week later, Jane replies to schedule an interview! Alex returns to the tracker, updates the application status to `Interviewing`, and the email status to `Replied`.
 
-### 2.5 Performance Overview (`Dashboard` Tab)
+### 2.6 Performance Overview (`Dashboard` Tab)
 
 Visual analytics to understand your job search progress.
 
-- <u>**KPI Cards**</u>: At-a-glance metrics for total applications, interviews, pending applications, and rejections.
+- <u>**KPI Cards**</u>: At-a-glance metrics for total applications, applied applications, pending applications, and rejections.
 - <u>**Charts**</u>:
-    - <u>*Application Funnel*</u>: A doughnut chart showing the distribution of your applications by status.
-    - <u>*Applications Over Time*</u>: A bar chart showing how many applications you've sent out each week.
-    - <u>*Email Status*</u>: A doughnut chart showing the status of your tracked emails (Sent, Replied, etc.).
+    - <u>*Application Funnel*</u>: A doughnut chart showing the distribution of your applications by status, with each status having a distinct color and visible legend.
+    - <u>*Applied Over Time*</u>: A bar chart showing how many applications you've applied to each week (tracks only "Applied" status applications).
+    - <u>*Email Status*</u>: A doughnut chart showing the status of your tracked emails (Sent, Replied, Ghosted, Follow-up 1, Follow-up 2) with distinct colors and visible legend.
 
 #### <u>User Journey Example (Dashboard Tab)</u>:
 
 27. At the end of the week, Alex wants to see a summary of his efforts. He goes to the Dashboard tab.
-28. He glances at the KPI cards and sees his `Total Applications` count has increased, and more importantly, the `Interviewing` count is now at 1.
-29. He looks at the `Application Funnel` chart, which visually confirms that one of his applications has moved into the interview stage, motivating him for the week ahead.
+28. He glances at the KPI cards and sees his `Total Applications` count has increased, and more importantly, the `Applied` count is now at 3.
+29. He looks at the `Application Funnel` chart, which shows a clear visual distribution of his applications by status, with each status having its own distinct color and a helpful legend.
+30. The `Applied Over Time` chart shows his weekly application activity, helping him track his momentum and consistency.
+31. The `Email Status` chart displays the current state of his outreach efforts, showing how many emails are sent, replied to, or need follow-up.
 
 ## 3. Setup Instructions
 To run ApplySmart locally, you will need Docker Desktop installed and running on your machine.
@@ -191,8 +209,35 @@ To run ApplySmart locally, you will need Docker Desktop installed and running on
 - The frontend will be available at `http://localhost:8080`.
 - The backend API will be running at `http://localhost:8000`.
 
-## 4. Customization Instructions
-### 4.1 Base Resume (`base_resume_fixed.yaml`)
+## 4. New Features & Improvements
+
+### 4.1 Enhanced Cover Letter System
+- **Live PDF Preview**: View the complete cover letter with proper formatting before saving
+- **Dynamic Email Selection**: Choose from multiple contact emails without regenerating content
+- **Real-time Updates**: See changes immediately in the preview when switching emails or details
+- **Separate Save & Download**: Save button only saves content, Download button handles PDF generation
+
+### 4.2 Improved Dashboard Analytics
+- **Enhanced Charts**: All charts now have distinct colors for each status with visible legends
+- **Applied Over Time Tracking**: New chart specifically tracks "Applied" applications per week
+- **Better Visual Distinction**: Each application and email status has its own unique, vibrant color
+- **Real-time Data Sync**: Dashboard automatically updates when tracker data changes
+
+### 4.3 Advanced Tracker Features
+- **Smart Sorting**: Sort by any field with visual indicators
+- **Advanced Filtering**: Filter applications by company, role, job ID, contact, or status
+- **Timestamp Synchronization**: "Last Updated" timestamps automatically sync between Applications sidebar and Tracker
+- **Quick Navigation**: Jump directly from tracker to resume project with one click
+- **Enhanced Status Management**: More granular status tracking with better visual feedback
+
+### 4.4 UI/UX Improvements
+- **Responsive Design**: Better mobile and desktop experience
+- **Collapsible Sidebar**: Save space when needed
+- **Improved Search**: Better application search functionality
+- **Enhanced Status Colors**: More visible and professional-looking status indicators
+
+## 5. Customization Instructions
+### 5.1 Base Resume (`base_resume_fixed.yaml`)
 
 This file is the foundation of every resume you generate. It's crucial to fill it out completely and correctly.
 
@@ -203,7 +248,7 @@ This file is the foundation of every resume you generate. It's crucial to fill i
 - <u>**experience and projects**</u>: For these sections, the context field is key. It's a short, 1-2 sentence summary of your role or project. The AI uses this context as a creative "seed" to invent the detailed, quantified, PAR-framework bullet points. You do not need to write full bullet points here.
 - <u>**certifications**</u>: List any relevant certifications. The description is a list of bullet points.
 
-### 4.2 AI Prompting (`app/backend/llm_services.py`)
+### 5.2 AI Prompting (`app/backend/llm_services.py`)
 
 The logic for the AI is located in the agent_resume_tailor function. You can customize its behavior by editing the prompt string within this function.
 
@@ -231,4 +276,10 @@ The logic for the AI is located in the agent_resume_tailor function. You can cus
 - This file controls the default visual styling of the PDF output. 
 - You can change font sizes, spacing, and the base font family (Times-Roman, Helvetica, or Courier) here without needing to touch the code.
 - These values populate the `Formatting & Spacing` form in the UI, and any changes you make in the UI for a specific project will override these defaults.
+
+### 5.3 Backend API Enhancements
+- **Cover Letter Preview API**: New endpoint `/applications/{app_id}/render-cover-letter-preview` for live preview generation
+- **Cover Letter Details API**: New endpoint `/applications/{app_id}/save-cover-letter-details` for saving email and additional details
+- **Enhanced PDF Generation**: Improved cover letter PDF generation with dynamic contact information
+- **Timestamp Synchronization**: Automatic file system timestamp updates for consistent "last updated" tracking
 
