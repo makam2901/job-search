@@ -4,7 +4,7 @@ import re
 import json
 import uuid
 import copy
-import shutil # <-- Import shutil for directory deletion
+import shutil
 from datetime import datetime
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
@@ -14,37 +14,28 @@ from typing import Dict, Any, List, Optional
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 
-# Import reportlab components needed for width calculation
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate
 from reportlab.lib.units import inch
 
-# Import modularized functions and classes
 from utils import get_app_id, APPLICATIONS_DIR, BASE_RESUME_PATH, load_variables, merge_variables
 from llm_services import agent_resume_tailor, agent_cold_email_generator, agent_cover_letter_generator
 from pdf_services import ATSResumePDFGenerator, CoverLetterPDFGenerator
 
-# --- Load Environment Variables ---
 load_dotenv()
 
-# --- App Initialization ---
 app = FastAPI(
     title="ApplySmart Backend",
     description="Manages job applications, renders PDFs, and generates cold emails.",
     version="22.0.0"
 )
 
-# --- CORS Middleware ---
 origins = ["http://localhost:8080", "http://localhost"]
 app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
-
-# --- Constants for Tracker ---
 TRACKER_APPS_PATH = os.path.join(APPLICATIONS_DIR, "tracker_applications.json")
 TRACKER_EMAILS_PATH = os.path.join(APPLICATIONS_DIR, "tracker_emails.json")
 
-
-# --- Pydantic Models ---
 class ApplicationData(BaseModel):
     companyName: str
     roleTitle: str
@@ -101,6 +92,7 @@ class TrackerApplicationItem(BaseModel):
     jobLink: Optional[str] = ""
     statusLink: Optional[str] = ""
     createdAt: str = Field(default_factory=lambda: datetime.now().isoformat())
+    lastUpdatedAt: Optional[str] = None
 
 class TrackerEmailItem(BaseModel):
     id: str = Field(default_factory=lambda: f"email_{uuid.uuid4().hex}")
@@ -108,7 +100,7 @@ class TrackerEmailItem(BaseModel):
     role: str
     jobId: Optional[str] = ""
     recruiter: Optional[str] = ""
-    contact: Optional[str] = "" # Recruiter's email
+    contact: Optional[str] = ""
     status: str = "Sent"
     jobLink: Optional[str] = ""
     createdAt: str = Field(default_factory=lambda: datetime.now().isoformat())
@@ -117,9 +109,16 @@ class TrackEmailRequest(BaseModel):
     recruiterName: str
     recruiterEmail: str
 
-# --- Helper Functions ---
+def update_application_timestamp(app_id: str):
+    """Updates the modification time of the application directory."""
+    app_path = os.path.join(APPLICATIONS_DIR, app_id)
+    if os.path.isdir(app_path):
+        try:
+            os.utime(app_path, None)
+        except OSError as e:
+            print(f"Could not update timestamp for {app_path}: {e}")
+
 def get_resume_versions(app_path: str) -> List[str]:
-    """Finds all versions of the tailored resume YAML, sorted newest first."""
     if not os.path.isdir(app_path):
         return []
     
@@ -140,7 +139,6 @@ def get_resume_versions(app_path: str) -> List[str]:
     return sorted_filenames
 
 def merge_resume_data(fixed_data: Dict, generated_data: Dict) -> Dict:
-    """Merges the fixed and LLM-generated resume data."""
     final_resume = fixed_data.copy()
 
     if 'summary' in generated_data:
@@ -162,7 +160,6 @@ def merge_resume_data(fixed_data: Dict, generated_data: Dict) -> Dict:
     return final_resume
 
 def update_app_details(app_path: str, new_details: Dict):
-    """Reads, updates, and writes app_details.json."""
     details_path = os.path.join(app_path, "app_details.json")
     details = {}
     if os.path.exists(details_path):
@@ -170,13 +167,12 @@ def update_app_details(app_path: str, new_details: Dict):
             try:
                 details = json.load(f)
             except json.JSONDecodeError:
-                details = {} # Start with empty dict if file is corrupt
+                details = {}
     details.update(new_details)
     with open(details_path, 'w') as f:
         json.dump(details, f, indent=2)
 
 def read_tracker_data(path: str) -> List[Dict]:
-    """Reads tracker data from a JSON file."""
     if not os.path.exists(path):
         return []
     with open(path, 'r') as f:
@@ -186,53 +182,41 @@ def read_tracker_data(path: str) -> List[Dict]:
             return []
 
 def write_tracker_data(path: str, data: List[Dict]):
-    """Writes tracker data to a JSON file."""
     with open(path, 'w') as f:
         json.dump(data, f, indent=2)
 
 def filter_resume_data(data: Dict, selections: Dict) -> Dict:
-    """Applies user selections from the frontend to filter resume data."""
     filtered_data = copy.deepcopy(data)
 
-    # Handle contact info selections from dropdowns
     if 'contact' in filtered_data:
         if 'contact-email' in selections:
             filtered_data['contact']['email'] = selections['contact-email']
         if 'contact-location' in selections:
             filtered_data['contact']['location'] = selections['contact-location']
 
-    # Handle section-level and item-level filtering based on checkboxes
     sections_to_process = ['summary', 'skills', 'education', 'experience', 'projects']
     for section_key in sections_to_process:
         if section_key not in filtered_data:
             continue
 
-        # Check if the whole section is deselected via its main checkbox
-        # The key from the frontend is formatted as 'select-summary', 'select-skills', etc.
         if not selections.get(f'select-{section_key}', True):
             del filtered_data[section_key]
             continue
 
-        # If the section is a list (like experience, projects), filter individual items
         if isinstance(filtered_data.get(section_key), list):
             filtered_items = []
-            # Iterate over the original data to match indices with selection keys
             for i, item in enumerate(data[section_key]):
-                # The key for an item is 'select-experience-0', 'select-experience-1', etc.
                 item_key = f'select-{section_key}-{i}'
-                if selections.get(item_key, True): # Default to True if key is missing
+                if selections.get(item_key, True):
                     filtered_items.append(item)
             
             if not filtered_items:
-                 # If all items are deselected, remove the whole section
                  del filtered_data[section_key]
             else:
                 filtered_data[section_key] = filtered_items
 
     return filtered_data
 
-
-# --- API Endpoints ---
 @app.on_event("startup")
 def on_startup():
     if not os.path.exists(APPLICATIONS_DIR): os.makedirs(APPLICATIONS_DIR)
@@ -391,6 +375,7 @@ def save_job_description(app_id: str, data: JobDescriptionData):
     if not os.path.exists(app_path): raise HTTPException(status_code=404, detail="Application not found.")
     file_path = os.path.join(app_path, "job_description.html")
     with open(file_path, 'w', encoding='utf-8') as f: f.write(data.htmlContent)
+    update_application_timestamp(app_id)
     return {"message": "Job Description saved successfully."}
 
 @app.post("/applications/{app_id}/generate-resume", response_model=Dict[str, Any])
@@ -412,8 +397,6 @@ def generate_resume(app_id: str, request: GenerateResumeRequest):
     try:
         generated_data = yaml.safe_load(generated_content_str)
     except yaml.YAMLError as e:
-        print(f"Error parsing LLM response: {e}")
-        print(f"LLM Response:\n{generated_content_str}")
         raise HTTPException(status_code=500, detail="Failed to parse LLM-generated resume content.")
 
     final_resume_data = merge_resume_data(fixed_resume_data, generated_data)
@@ -428,6 +411,7 @@ def generate_resume(app_id: str, request: GenerateResumeRequest):
     with open(yaml_path, 'w', encoding='utf-8') as f:
         f.write(final_resume_yaml)
 
+    update_application_timestamp(app_id)
     updated_versions = get_resume_versions(app_path)
 
     return {
@@ -447,6 +431,7 @@ def save_variables(app_id: str, request: SaveVariablesRequest):
     try:
         with open(vars_path, 'w', encoding='utf-8') as f:
             yaml.dump(request.variables, f, allow_unicode=True, sort_keys=False)
+        update_application_timestamp(app_id)
         return {"message": "Configuration saved successfully."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save configuration: {e}")
@@ -488,37 +473,27 @@ def render_pdf(app_id: str, data: RenderRequestData):
 
 @app.post("/applications/{app_id}/finalize", response_model=Dict[str, str])
 def finalize_resume(app_id: str, request: FinalizeRequest):
-    """
-    Finalizes the resume. It takes the full content from a specific resume version,
-    applies user selections and formatting overrides from the request, saves the
-    result to finalized_resume.yaml, and generates the definitive PDF.
-    """
     app_path = os.path.join(APPLICATIONS_DIR, app_id)
     if not os.path.isdir(app_path):
         raise HTTPException(status_code=404, detail="Application not found.")
 
-    # 1. Load the original resume content from the request
     try:
         original_data = yaml.safe_load(request.resumeYaml)
     except yaml.YAMLError:
         raise HTTPException(status_code=400, detail="Invalid YAML format in request resume data.")
 
-    # 2. Apply selections from the request to filter the data
     final_resume_data = filter_resume_data(original_data, request.selections)
     
-    # Ensure the 'name' field is always present in the final data
     if 'name' not in final_resume_data:
         if 'name' in original_data:
             final_resume_data['name'] = original_data['name']
         else:
             raise HTTPException(status_code=400, detail="Resume data must contain a 'name' field.")
 
-    # 3. Save the final, filtered YAML content
     final_yaml_path = os.path.join(app_path, "finalized_resume.yaml")
     with open(final_yaml_path, 'w', encoding='utf-8') as f:
         yaml.dump(final_resume_data, f, sort_keys=False, allow_unicode=True)
 
-    # 4. Generate the final PDF from the filtered data
     try:
         pdf_generator = ATSResumePDFGenerator(variables=request.variables)
         
@@ -532,7 +507,6 @@ def finalize_resume(app_id: str, request: FinalizeRequest):
 
         pdf_generator.generate_pdf_from_data(trimmed_resume_data, final_pdf_path)
 
-        # 5. Update application details to track the finalized state
         update_app_details(app_path, {
             "name": safe_name,
             "finalizedBaseVersion": request.baseVersionFile
@@ -541,6 +515,7 @@ def finalize_resume(app_id: str, request: FinalizeRequest):
         if os.path.exists(dummy_doc.filename):
             os.remove(dummy_doc.filename)
 
+        update_application_timestamp(app_id)
         return {"message": f"Successfully finalized resume as {final_pdf_name}."}
         
     except Exception as e:
@@ -582,7 +557,7 @@ def save_email_details(app_id: str, details: EmailDetails):
         raise HTTPException(status_code=404, detail="Application not found.")
     
     update_app_details(app_path, details.dict())
-    
+    update_application_timestamp(app_id)
     return {"message": "Email details saved."}
 
 @app.post("/applications/{app_id}/generate-email", response_model=Dict[str, str])
@@ -621,11 +596,11 @@ def generate_email(app_id: str, request: EmailGenerationRequest):
         details_to_save['generatedEmailBody'] = email_content.get('body')
         
         update_app_details(app_path, details_to_save)
+        update_application_timestamp(app_id)
         return email_content
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate email content: {e}")
     
-# --- Cover Letter Endpoints ---
 @app.post("/applications/{app_id}/generate-cover-letter", response_model=Dict[str, str])
 def generate_cover_letter(app_id: str, request: CoverLetterGenerationRequest):
     app_path = os.path.join(APPLICATIONS_DIR, app_id)
@@ -653,12 +628,11 @@ def generate_cover_letter(app_id: str, request: CoverLetterGenerationRequest):
         cover_letter_content = json.loads(cover_letter_str)
         body = cover_letter_content.get("cover_letter_body", "")
 
-        # Save generated content and details but don't generate PDF yet
         update_app_details(app_path, {
             "coverLetterAdditionalDetails": request.additionalDetails,
             "generatedCoverLetterBody": body
         })
-
+        update_application_timestamp(app_id)
         return {"cover_letter_body": body}
 
     except Exception as e:
@@ -671,7 +645,6 @@ def save_cover_letter(app_id: str, request: SaveCoverLetterRequest):
         raise HTTPException(status_code=404, detail="Application not found.")
     
     try:
-        # Load base resume to get name and contact info
         with open(BASE_RESUME_PATH, 'r', encoding='utf-8') as f:
             base_resume_data = yaml.safe_load(f)
         
@@ -679,21 +652,18 @@ def save_cover_letter(app_id: str, request: SaveCoverLetterRequest):
         candidate_name = base_resume_data.get('name', 'Candidate')
         safe_name = "".join(c if c.isalnum() else '_' for c in candidate_name)
         
-        # Define final PDF name and path
         final_pdf_name = f"CoverLetter_{safe_name}.pdf"
         pdf_path = os.path.join(app_path, final_pdf_name)
 
-        # Save the text and the filename to details
         update_app_details(app_path, {
             "generatedCoverLetterBody": request.coverLetterText,
             "finalizedCoverLetterFile": final_pdf_name
         })
 
-        # Generate the PDF with the final name
         variables = load_variables()
         pdf_generator = CoverLetterPDFGenerator(variables=variables)
         pdf_generator.generate_pdf(request.coverLetterText, contact_info, pdf_path, candidate_name)
-        
+        update_application_timestamp(app_id)
         return {"message": "Cover letter saved and PDF updated."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save cover letter: {str(e)}")
@@ -722,9 +692,6 @@ def get_cover_letter_pdf(app_id: str):
         
     return FileResponse(pdf_path, media_type='application/pdf', filename=pdf_filename)
 
-
-# --- Tracker Endpoints ---
-
 @app.post("/applications/{app_id}/track-application", response_model=TrackerApplicationItem)
 def track_application(app_id: str):
     app_path = os.path.join(APPLICATIONS_DIR, app_id)
@@ -745,7 +712,6 @@ def track_application(app_id: str):
     jobId = details.get("jobId", "")
     jobLink = details.get("jobLink", "")
 
-    # Find existing item based on a combination of company, role, and jobId
     existing_item = next((item for item in apps if item.get("company") == company and item.get("role") == role and item.get("jobId") == jobId), None)
 
     if existing_item:
@@ -767,13 +733,21 @@ def track_application(app_id: str):
 
 @app.get("/tracker/applications", response_model=List[TrackerApplicationItem])
 def get_tracker_applications():
-    return read_tracker_data(TRACKER_APPS_PATH)
+    apps_data = read_tracker_data(TRACKER_APPS_PATH)
+    for app in apps_data:
+        app_id = get_app_id(app.get("company"), app.get("role"), app.get("jobId"))
+        app_path = os.path.join(APPLICATIONS_DIR, app_id)
+        if os.path.isdir(app_path):
+            mtime = os.path.getmtime(app_path)
+            app["lastUpdatedAt"] = datetime.fromtimestamp(mtime).isoformat()
+        else:
+            app["lastUpdatedAt"] = app.get("createdAt")
+    return apps_data
 
 @app.post("/tracker/applications", response_model=TrackerApplicationItem)
 def add_tracker_application(item: TrackerApplicationItem):
     apps = read_tracker_data(TRACKER_APPS_PATH)
     
-    # Create an empty project in the applications folder
     app_id = get_app_id(item.company, item.role, item.jobId)
     app_path = os.path.join(APPLICATIONS_DIR, app_id)
     if not os.path.exists(app_path):
@@ -787,17 +761,14 @@ def add_tracker_application(item: TrackerApplicationItem):
                 "jobLink": item.jobLink
             }, f, indent=2)
 
-    # Check for existing item more robustly
     existing_item = next((app for app in apps if app.get("company") == item.company and app.get("role") == item.role and app.get("jobId") == item.jobId), None)
 
     if existing_item:
-        # Update existing item
         for key, value in item.dict(exclude_unset=True).items():
             existing_item[key] = value
         write_tracker_data(TRACKER_APPS_PATH, apps)
         return existing_item
     else:
-        # Add new item
         apps.insert(0, item.dict())
         write_tracker_data(TRACKER_APPS_PATH, apps)
         return item
@@ -810,11 +781,15 @@ def update_tracker_application(item_id: str, updated_item: TrackerApplicationIte
         raise HTTPException(status_code=404, detail="Application item not found")
     
     original_created_at = apps[index].get("createdAt", datetime.now().isoformat())
-    item_dict = updated_item.dict()
-    item_dict["createdAt"] = original_created_at
-    item_dict["id"] = item_id
+    item_dict = updated_item.dict(exclude_unset=True)
+    
+    apps[index].update(item_dict)
+    apps[index]["createdAt"] = original_created_at
+    apps[index]["id"] = item_id
 
-    apps[index] = item_dict
+    app_id = get_app_id(apps[index].get("company"), apps[index].get("role"), apps[index].get("jobId"))
+    update_application_timestamp(app_id)
+
     write_tracker_data(TRACKER_APPS_PATH, apps)
     return apps[index]
 
@@ -826,19 +801,15 @@ def delete_tracker_application(item_id: str):
     if not app_to_delete:
         raise HTTPException(status_code=404, detail="Application item not found in tracker.")
 
-    # Construct the app_id to find the directory
     app_id = get_app_id(app_to_delete['company'], app_to_delete['role'], app_to_delete.get('jobId'))
     app_path = os.path.join(APPLICATIONS_DIR, app_id)
 
-    # Delete the directory if it exists
     if os.path.isdir(app_path):
         try:
             shutil.rmtree(app_path)
         except OSError as e:
-            # Handle potential errors during deletion
             raise HTTPException(status_code=500, detail=f"Failed to delete application folder: {e}")
 
-    # Remove the item from the tracker list
     updated_apps = [app for app in apps if app["id"] != item_id]
     write_tracker_data(TRACKER_APPS_PATH, updated_apps)
     

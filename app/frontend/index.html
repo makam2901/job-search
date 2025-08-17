@@ -25,20 +25,18 @@
         #sidebar.collapsed .sidebar-text,
         #sidebar.collapsed .app-details,
         #sidebar.collapsed #sidebarToggle,
-        #sidebar.collapsed .search-container { display: none; }
+        #sidebar.collapsed .search-container,
+        #sidebar.collapsed .sort-controls { display: none; }
         #sidebar:not(.collapsed) .sidebar-icon-only { display: none; }
         #sidebar.collapsed .app-list-button { justify-content: center; padding-left: 0; padding-right: 0; }
         #sidebar.collapsed .justify-between { justify-content: center; }
 
-        /* Main Tab styling */
         .tab-button.active { border-color: #3b82f6; color: #3b82f6; background-color: #eff6ff; }
         .tab-content.hidden { display: none; }
 
-        /* Tracker Sub-Tab Styling */
         .tracker-tab-button.active { border-color: #3b82f6; color: #3b82f6; font-weight: 600; }
         .tracker-tab-content.hidden { display: none; }
         
-        /* Tracker Table Styling */
         .tracker-table th, .tracker-table td { padding: 12px 15px; text-align: left; vertical-align: middle; }
         .tracker-table input, .tracker-table select {
             border: 1px solid transparent;
@@ -53,9 +51,12 @@
              background-color: white;
              outline: none;
         }
-        /* Favorite Company Tile */
         .company-tile { transition: box-shadow 0.2s ease-in-out; }
         .company-tile:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .sort-icon { cursor: pointer; opacity: 0.5; font-weight: normal; }
+        .sort-icon.active { opacity: 1; color: #3b82f6; font-weight: bold;}
+        .sort-icon-btn { cursor: pointer; opacity: 0.6; }
+        .sort-icon-btn.active { opacity: 1; color: #3b82f6; font-weight: 600; }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800 overflow-hidden">
@@ -80,7 +81,13 @@
                      <input type="search" id="searchApplications" placeholder="Search..." class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 sidebar-text">
                      <svg class="w-5 h-5 absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                 </div>
-                <h2 class="text-lg font-semibold mb-3 sidebar-text">Resume Projects</h2>
+                <div class="flex justify-between items-center mb-3 sort-controls">
+                    <h2 class="text-lg font-semibold sidebar-text">Resume Projects</h2>
+                    <div class="flex items-center space-x-2 sidebar-text text-xs">
+                        <button id="sortAppByDateBtn" class="sort-icon-btn active" data-sort="createdAt">Date <span class="sort-indicator">▼</span></button>
+                        <button id="sortAppByCompanyBtn" class="sort-icon-btn" data-sort="company">A-Z <span class="sort-indicator"></span></button>
+                    </div>
+                </div>
                 <div id="applicationList" class="flex-grow overflow-y-auto pr-2 custom-scrollbar"></div>
             </div>
         </aside>
@@ -401,7 +408,7 @@
                 </div>
             </div>
 
-            <div id="trackerContent" class="tab-content h-full overflow-y-auto p-8 hidden">
+            <div id="trackerContent" class="tab-content h-full flex flex-col p-8 hidden">
                 <div class="mb-6 border-b border-gray-200">
                     <nav id="trackerSubTabs" class="-mb-px flex space-x-6" aria-label="Tracker Tabs">
                         <button data-tracker-tab="applications" class="tracker-tab-button active shrink-0 border-b-2 font-medium px-1 py-3 text-sm">Applications</button>
@@ -409,8 +416,8 @@
                     </nav>
                 </div>
 
-                <div id="applicationsTracker" class="tracker-tab-content active">
-                    <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+                <div id="applicationsTracker" class="tracker-tab-content active flex-grow flex flex-col min-h-0">
+                    <div class="bg-white p-6 rounded-lg shadow-md mb-8 flex-shrink-0">
                         <h3 class="text-2xl font-semibold mb-4">Add New Job Application Manually</h3>
                         <form id="trackerForm" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-end">
                             <div>
@@ -446,32 +453,50 @@
                             </div>
                         </form>
                     </div>
-                    <div class="bg-white rounded-lg shadow-md overflow-hidden">
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-sm tracker-table">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th class="w-1/6">Company</th><th class="w-1/6">Role</th><th class="w-1/12">Job ID</th><th class="w-1/12">Referral</th><th class="w-1/6">Contact</th><th class="w-1/6">Status</th><th class="w-1/12">Actions</th><th class="w-1/12">Job Link</th><th class="w-1/6">Status Link</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="applicationsTrackerTableBody" class="divide-y divide-gray-200"></tbody>
-                            </table>
-                        </div>
+                    <div class="bg-white rounded-lg shadow-md flex-grow overflow-auto">
+                        <table class="w-full text-sm tracker-table">
+                            <thead class="bg-gray-50 sticky top-0 z-10">
+                                <tr>
+                                    <th class="p-2"><input type="text" id="filterCompany" placeholder="Filter..." class="w-full p-1 border rounded text-xs"></th>
+                                    <th class="p-2"><input type="text" id="filterRole" placeholder="Filter..." class="w-full p-1 border rounded text-xs"></th>
+                                    <th class="p-2"><input type="text" id="filterJobId" placeholder="Filter..." class="w-full p-1 border rounded text-xs"></th>
+                                    <th class="p-2"></th>
+                                    <th class="p-2"><input type="text" id="filterContact" placeholder="Filter..." class="w-full p-1 border rounded text-xs"></th>
+                                    <th class="p-2">
+                                        <select id="filterStatus" class="w-full p-1 border rounded text-xs">
+                                            <option value="">All</option>
+                                        </select>
+                                    </th>
+                                    <th class="p-2" colspan="4"></th>
+                                </tr>
+                                <tr>
+                                    <th class="w-[15%]">Company <span class="sort-icon" data-sort="company"></span></th>
+                                    <th class="w-[15%]">Role <span class="sort-icon" data-sort="role"></span></th>
+                                    <th class="w-[10%]">Job ID</th>
+                                    <th class="w-[5%]">Referral</th>
+                                    <th class="w-[10%]">Contact</th>
+                                    <th class="w-[10%]">Status <span class="sort-icon" data-sort="status"></span></th>
+                                    <th class="w-[10%]">Last Updated <span class="sort-icon" data-sort="lastUpdatedAt"></span></th>
+                                    <th class="w-[5%]">Job Link</th>
+                                    <th class="w-[10%]">Status Link</th>
+                                    <th class="w-[10%]">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="applicationsTrackerTableBody" class="divide-y divide-gray-200"></tbody>
+                        </table>
                     </div>
                 </div>
 
-                <div id="emailsTracker" class="tracker-tab-content hidden">
-                     <div class="bg-white rounded-lg shadow-md overflow-hidden">
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-sm tracker-table">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th class="w-1/5">Company</th><th class="w-1/5">Role</th><th class="w-1/12">Job ID</th><th class="w-1/5">Recruiter</th><th class="w-1/5">Contact</th><th class="w-1/6">Status</th><th class="w-1/12">Actions</th><th class="w-1/12">Job Link</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="emailsTrackerTableBody" class="divide-y divide-gray-200"></tbody>
-                            </table>
-                        </div>
+                <div id="emailsTracker" class="tracker-tab-content hidden flex-grow flex flex-col min-h-0">
+                     <div class="bg-white rounded-lg shadow-md overflow-auto flex-grow">
+                        <table class="w-full text-sm tracker-table">
+                            <thead class="bg-gray-50 sticky top-0 z-10">
+                                <tr>
+                                    <th class="w-1/5">Company</th><th class="w-1/5">Role</th><th class="w-1/12">Job ID</th><th class="w-1/5">Recruiter</th><th class="w-1/5">Contact</th><th class="w-1/6">Status</th><th class="w-1/12">Actions</th><th class="w-1/12">Job Link</th>
+                                </tr>
+                            </thead>
+                            <tbody id="emailsTrackerTableBody" class="divide-y divide-gray-200"></tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -544,10 +569,8 @@
     </div>
 
     <script>
-        // --- Combined Application Script ---
         const API_BASE_URL = 'http://localhost:8000';
 
-        // --- Part 1: State & Constants ---
         const APP_STATUS_OPTIONS = ["To Apply", "Ready to Apply", "Waiting", "Finding", "Asking", "Applied", "Missed", "Rejected", "Received", "Interviewing"];
         const APP_STATUS_COLORS = {
             "To Apply": { bg: "bg-gray-100", text: "text-gray-800" },
@@ -570,14 +593,16 @@
         const AVAILABLE_FONTS = ['Helvetica', 'Times-Roman', 'Courier'];
         
         let allApplications = [];
+        let trackedApplications = [];
         let currentAppId = null;
         let currentResumeYaml = '';
         let globalDefaultVars = {};
         let appSpecificVars = {};
         let renderTimeout;
         let appStatusChartInstance, appTimelineChartInstance, emailStatusChartInstance, emailTimelineChartInstance;
+        let appSortConfig = { field: 'createdAt', direction: 'desc' };
+        let trackerSortConfig = { field: 'lastUpdatedAt', direction: 'desc' };
 
-        // --- Part 2: DOM Elements ---
         const tabButtons = document.querySelectorAll('.tab-button');
         const tabContents = document.querySelectorAll('.tab-content');
         const mainHeaderLogo = document.getElementById('mainHeaderLogo');
@@ -585,7 +610,6 @@
         const sidebarExpander = document.getElementById('sidebarExpander');
         const sidebarToggle = document.getElementById('sidebarToggle');
         
-        // Resume Project Elements
         const newApplicationBtn = document.getElementById('newApplicationBtn');
         const welcomeView = document.getElementById('welcomeView');
         const applicationView = document.getElementById('applicationView');
@@ -602,7 +626,6 @@
         const applicationList = document.getElementById('applicationList');
         const searchApplications = document.getElementById('searchApplications');
         
-        // Workspace Elements
         const saveJDBtn = document.getElementById('saveJDBtn');
         const jdStatus = document.getElementById('jdStatus');
         const jobDescriptionEditor = document.getElementById('jobDescriptionEditor');
@@ -631,7 +654,6 @@
         const contentSelectionPlaceholder = document.getElementById('contentSelectionPlaceholder');
         const formattingContent = document.getElementById('formattingContent');
 
-        // Cover Letter Elements
         const coverLetterWelcomeView = document.getElementById('coverLetterWelcomeView');
         const coverLetterWorkspace = document.getElementById('coverLetterWorkspace');
         const coverLetterWorkspaceTitle = document.getElementById('coverLetterWorkspaceTitle');
@@ -645,8 +667,6 @@
         const saveCoverLetterBtn = document.getElementById('saveCoverLetterBtn');
         const clSaveStatus = document.getElementById('clSaveStatus');
 
-
-        // Email Tab Elements
         const emailWelcomeView = document.getElementById('emailWelcomeView');
         const emailWorkspace = document.getElementById('emailWorkspace');
         const emailWorkspaceTitle = document.getElementById('emailWorkspaceTitle');
@@ -666,20 +686,16 @@
         const openEmailClientBtn = document.getElementById('openEmailClientBtn');
         const emailTrackStatus = document.getElementById('emailTrackStatus');
 
-
-        // Tracker Tab Elements
         const trackerSubTabs = document.getElementById('trackerSubTabs');
         const trackerTabContents = document.querySelectorAll('.tracker-tab-content');
         const trackerForm = document.getElementById('trackerForm');
         const applicationsTrackerTableBody = document.getElementById('applicationsTrackerTableBody');
         const emailsTrackerTableBody = document.getElementById('emailsTrackerTableBody');
 
-        // Favorites Tab Elements
         const favoritesForm = document.getElementById('favoritesForm');
         const favoriteCompanyInput = document.getElementById('favoriteCompanyInput');
         const favoritesGrid = document.getElementById('favoritesGrid');
         
-        // --- Part 3: API & Services ---
         async function apiCall(endpoint, method = 'GET', body = null, isBlob = false) {
             try {
                 const options = { method, headers: {} };
@@ -724,8 +740,6 @@
             saveStatus: (status) => localStorage.setItem(FAVORITES_STATUS_KEY, JSON.stringify(status)),
         };
 
-        // --- Part 4: UI Rendering & Logic ---
-        
         function showStatusMessage(element, message, isError = false, duration = 3000) {
             element.textContent = message;
             element.className = `text-sm h-5 ${isError ? 'text-red-600' : 'text-green-600'}`;
@@ -778,25 +792,77 @@
         async function refreshAllTrackers() {
             try {
                 const [apps, emails] = await Promise.all([trackerApi.getApps(), trackerApi.getEmails()]);
-                renderApplicationsTable(apps);
+                trackedApplications = apps;
+                renderApplicationsTable();
                 renderEmailsTable(emails);
                 updateDashboard(apps, emails);
             } catch (error) {
                 console.error("Failed to refresh trackers", error);
             }
         }
+        
+        function getAppIdFromTrackerItem(app) {
+            const safeCompany = (app.company || "").replace(/[^a-zA-Z0-9]/g, '_');
+            const safeRole = (app.role || "").replace(/[^a-zA-Z0-9]/g, '_');
+            if (app.jobId && String(app.jobId).trim()) {
+                const safeJobId = String(app.jobId).trim().replace(/[^a-zA-Z0-9]/g, '_');
+                return `${safeCompany}_${safeRole}_${safeJobId}`;
+            }
+            return `${safeCompany}_${safeRole}`;
+        }
 
-        // --- Application Tracker ---
-        function renderApplicationsTable(applications) {
+        function renderApplicationsTable() {
+            let appsToRender = [...trackedApplications];
+            
+            const filters = {
+                company: document.getElementById('filterCompany').value.toLowerCase(),
+                role: document.getElementById('filterRole').value.toLowerCase(),
+                jobId: document.getElementById('filterJobId').value.toLowerCase(),
+                contact: document.getElementById('filterContact').value.toLowerCase(),
+                status: document.getElementById('filterStatus').value,
+            };
+
+            appsToRender = appsToRender.filter(app => {
+                return (app.company?.toLowerCase() || '').includes(filters.company) &&
+                       (app.role?.toLowerCase() || '').includes(filters.role) &&
+                       (app.jobId?.toLowerCase() || '').includes(filters.jobId) &&
+                       (app.contact?.toLowerCase() || '').includes(filters.contact) &&
+                       (filters.status === '' || app.status === filters.status);
+            });
+
+            const { field, direction } = trackerSortConfig;
+            appsToRender.sort((a, b) => {
+                let valA = a[field];
+                let valB = b[field];
+
+                if (field === 'lastUpdatedAt' || field === 'createdAt') {
+                    valA = valA ? new Date(valA).getTime() : 0;
+                    valB = valB ? new Date(valB).getTime() : 0;
+                } else {
+                    valA = (valA || '').toString().toLowerCase();
+                    valB = (valB || '').toString().toLowerCase();
+                }
+
+                if (valA < valB) return direction === 'asc' ? -1 : 1;
+                if (valA > valB) return direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+
             applicationsTrackerTableBody.innerHTML = '';
-            if (!applications || applications.length === 0) {
-                applicationsTrackerTableBody.innerHTML = `<tr><td colspan="9" class="text-center text-gray-500 py-8">No applications tracked yet.</td></tr>`;
+            if (appsToRender.length === 0) {
+                applicationsTrackerTableBody.innerHTML = `<tr><td colspan="10" class="text-center text-gray-500 py-8">No applications match filters.</td></tr>`;
                 return;
             }
-            applications.forEach(app => {
+            appsToRender.forEach(app => {
                 const row = document.createElement('tr');
                 row.className = 'hover:bg-gray-50';
                 row.dataset.id = app.id;
+                const appId = getAppIdFromTrackerItem(app);
+                row.dataset.appid = appId;
+
+                const lastUpdated = app.lastUpdatedAt ? new Date(app.lastUpdatedAt).toLocaleString() : 'N/A';
+
                 row.innerHTML = `
                     <td><input type="text" value="${app.company || ''}" data-field="company" class="font-semibold"></td>
                     <td><input type="text" value="${app.role || ''}" data-field="role"></td>
@@ -804,9 +870,13 @@
                     <td class="text-center"><input type="checkbox" ${app.referral ? 'checked' : ''} data-field="referral" class="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"></td>
                     <td><input type="text" value="${app.contact || ''}" data-field="contact"></td>
                     <td class="status-cell"></td>
-                    <td><button class="delete-btn text-gray-400 hover:text-red-600 p-1 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button></td>
-                    <td><a href="${app.jobLink || '#'}" target="_blank" class="text-blue-600 hover:underline">${app.jobLink ? 'View Job' : 'N/A'}</a></td>
-                    <td><input type="url" value="${app.statusLink || ''}" data-field="statusLink" class="text-blue-600 hover:underline" placeholder="Add status link..."></td>
+                    <td>${lastUpdated}</td>
+                    <td><a href="${app.jobLink || '#'}" target="_blank" class="text-blue-600 hover:underline">${app.jobLink ? 'View' : 'N/A'}</a></td>
+                    <td>${app.statusLink ? `<a href="${app.statusLink}" target="_blank" class="text-blue-600 hover:underline">link</a>` : '<input type="url" value="" data-field="statusLink" placeholder="Add link...">'}</td>
+                    <td class="flex items-center space-x-2">
+                        <button class="goto-app-btn text-gray-400 hover:text-blue-600 p-1 rounded-full" title="Go to Application"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg></button>
+                        <button class="delete-btn text-gray-400 hover:text-red-600 p-1 rounded-full" title="Delete"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                    </td>
                 `;
                 const statusCell = row.querySelector('.status-cell');
                 statusCell.appendChild(createStatusDropdown(app.status, APP_STATUS_OPTIONS, APP_STATUS_COLORS, 'status'));
@@ -814,7 +884,6 @@
             });
         }
 
-        // --- Email Tracker ---
         function renderEmailsTable(emails) {
             emailsTrackerTableBody.innerHTML = '';
             if (!emails || emails.length === 0) {
@@ -875,7 +944,7 @@
             });
             
             const linkElement = row.querySelector('a');
-            if (linkElement && isApps) { // Only for apps table
+            if (linkElement && isApps) {
                 itemData.jobLink = itemData.jobLink || linkElement.href;
             }
 
@@ -907,7 +976,7 @@
             const table = row.closest('tbody');
             const isApps = table.id === 'applicationsTrackerTableBody';
             
-            if (confirm(`Are you sure you want to delete this ${isApps ? 'application' : 'email'}?`)) {
+            if (confirm(`Are you sure you want to delete this ${isApps ? 'application' : 'email'}? This will also delete the project folder.`)) {
                 try {
                     if (isApps) {
                         await trackerApi.deleteApp(id);
@@ -916,25 +985,22 @@
                     }
                     row.remove();
                     await refreshAllTrackers();
+                    await refreshApplicationList();
                 } catch (error) {
                     showStatusMessage(finalizeStatus, `Failed to delete item: ${error.message}`, true);
                 }
             }
         }
 
-        // --- Dashboard Logic ---
         function updateDashboard(applications, emails) {
-            // Application KPIs
             document.getElementById('kpiAppTotal').textContent = applications.length;
             document.getElementById('kpiAppInterviewing').textContent = applications.filter(a => a.status === 'Interviewing').length;
             document.getElementById('kpiAppPending').textContent = applications.filter(a => !['Interviewing', 'Rejected', 'Received', 'Missed'].includes(a.status)).length;
             document.getElementById('kpiAppRejected').textContent = applications.filter(a => a.status === 'Rejected').length;
 
-            // Email KPIs
             document.getElementById('kpiEmailTotal').textContent = emails.length;
             document.getElementById('kpiEmailReplied').textContent = emails.filter(e => e.status === 'Replied').length;
 
-            // Application Charts
             const appStatusCounts = APP_STATUS_OPTIONS.reduce((acc, status) => {
                 acc[status] = applications.filter(a => a.status === status).length;
                 return acc;
@@ -946,7 +1012,6 @@
             if (appTimelineChartInstance) appTimelineChartInstance.destroy();
             appTimelineChartInstance = new Chart(document.getElementById('appTimelineChart').getContext('2d'), { type: 'bar', data: { labels: appTimelineData.labels, datasets: [{ label: 'Apps per Week', data: appTimelineData.counts, backgroundColor: 'rgba(59, 130, 246, 0.5)' }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } } });
 
-            // Email Charts
             const emailStatusCounts = EMAIL_STATUS_OPTIONS.reduce((acc, status) => {
                 acc[status] = emails.filter(e => e.status === status).length;
                 return acc;
@@ -972,7 +1037,6 @@
             return { labels: sortedWeeks, counts: sortedWeeks.map(week => data[week]) };
         }
 
-        // --- Favorites Logic ---
         function handleDailyReset() {
             const today = new Date().toISOString().split('T')[0];
             const status = favoritesDb.getStatus();
@@ -1009,7 +1073,6 @@
             renderFavoritesGrid(companies, status.checkedIds);
         }
 
-        // --- Resume Project Logic ---
         const populateFormattingForm = (vars, parentKey = '', container) => {
             container.innerHTML = '';
             for (const key in vars) {
@@ -1029,7 +1092,6 @@
                     fieldset.appendChild(div);
                     container.appendChild(fieldset);
                 } else if (typeof value === 'boolean') {
-                    // Omitted for brevity
                 } else {
                     if (key === 'fontName') continue; 
                     const div = document.createElement('div');
@@ -1146,7 +1208,7 @@
                 const input = document.createElement('input');
                 input.type = 'checkbox';
                 input.id = `select-${name}`;
-                input.name = `select-${name}`; // Standardized name format
+                input.name = `select-${name}`;
                 input.checked = checked;
                 input.className = 'h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500';
                 const label = document.createElement('label');
@@ -1343,7 +1405,13 @@
         function handleAppSelection(appId) {
             const activeTab = document.querySelector('.tab-button.active').dataset.tab;
             currentAppId = appId;
-            renderApplicationList(allApplications); // Re-render to highlight selection
+            renderApplicationList();
+            
+            const selectedButton = applicationList.querySelector(`button[data-appid="${appId}"]`);
+            if (selectedButton) {
+                selectedButton.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+
             if (activeTab === 'applications') {
                 selectApplicationForResume(appId);
             } else if (activeTab === 'email') {
@@ -1355,7 +1423,11 @@
         
         async function selectApplicationForResume(appId) {
             const app = allApplications.find(a => a.appId === appId);
-            if (!app) return;
+            if (!app) {
+                console.error("Application not found in list:", appId);
+                showStatusMessage(finalizeStatus, `Application project not found.`, true);
+                return;
+            };
 
             welcomeView.classList.add('hidden');
             applicationView.classList.remove('hidden');
@@ -1364,7 +1436,6 @@
             workspaceTitle.textContent = `${app.company} - ${app.role}`;
             workspaceSubTitle.textContent = app.jobId ? `Job ID: ${app.jobId}` : '';
             
-            // Reset UI state
             pdfViewer.src = 'about:blank';
             outputSection.style.visibility = 'hidden';
             formattingContent.classList.add('hidden');
@@ -1372,7 +1443,7 @@
             fileNameDisplay.textContent = '';
             configFileUpload.value = '';
             finalizeBtn.disabled = true;
-            trackApplicationBtn.disabled = false; // Enable track application button
+            trackApplicationBtn.disabled = false;
             finalizeStatus.textContent = '';
 
             try {
@@ -1472,7 +1543,6 @@
             emailWorkspace.classList.remove('hidden');
             emailWorkspaceTitle.textContent = `${app.company} - ${app.role}`;
             
-            // Reset fields
             recruiterNameInput.value = '';
             recruiterEmailInput.value = '';
             recruiterLinkedInInput.value = '';
@@ -1525,15 +1595,46 @@
                 option.textContent = font;
                 baseFontNameSelect.appendChild(option);
             });
-            try {
+            const filterStatus = document.getElementById('filterStatus');
+            filterStatus.innerHTML = '<option value="">All</option>';
+            APP_STATUS_OPTIONS.forEach(status => {
+                const option = document.createElement('option');
+                option.value = status;
+                option.textContent = status;
+                filterStatus.appendChild(option);
+            });
+            await refreshApplicationList();
+        }
+
+        async function refreshApplicationList() {
+             try {
                 allApplications = await apiCall('/applications');
-                renderApplicationList(allApplications);
+                renderApplicationList();
             } catch (error) {
                 applicationList.innerHTML = '<p class="text-red-500 text-sm">Could not load applications.</p>';
             }
         }
         
-        function renderApplicationList(appsToRender) {
+        function renderApplicationList() {
+            let appsToRender = [...allApplications];
+            const searchTerm = searchApplications.value.toLowerCase();
+            if (searchTerm) {
+                appsToRender = appsToRender.filter(app => 
+                    app.company.toLowerCase().includes(searchTerm) || 
+                    app.role.toLowerCase().includes(searchTerm) ||
+                    (app.jobId && app.jobId.toLowerCase().includes(searchTerm))
+                );
+            }
+
+            const { field, direction } = appSortConfig;
+            appsToRender.sort((a, b) => {
+                const valA = field === 'createdAt' ? a.createdAt : (a.company || '').toLowerCase();
+                const valB = field === 'createdAt' ? b.createdAt : (b.company || '').toLowerCase();
+                if (valA < valB) return direction === 'asc' ? -1 : 1;
+                if (valA > valB) return direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+
             applicationList.innerHTML = appsToRender.length === 0 
                 ? '<p class="text-gray-500 text-sm p-3">No applications found.</p>' 
                 : '';
@@ -1572,20 +1673,20 @@
                 }
                 await apiCall(`/applications/${appId}/save-variables`, 'POST', { variables: fullConfig });
                 showStatusMessage(statusElement, successMessage);
+                await refreshApplicationList();
             } catch (error) {
                 showStatusMessage(statusElement, `Failed to save: ${error.message}`, true);
             }
         }
 
-        // --- Part 5: Event Listeners ---
         document.addEventListener('DOMContentLoaded', () => {
             initializeApp();
             switchTab('applications');
             refreshFavoritesUI();
             refreshAllTrackers();
+            updateTrackerSortIcons();
         });
 
-        // Main Navigation
         tabButtons.forEach(button => button.addEventListener('click', () => switchTab(button.dataset.tab)));
         sidebarToggle.addEventListener('click', () => {
             const isCollapsed = sidebar.classList.toggle('collapsed');
@@ -1596,7 +1697,6 @@
             sidebarExpander.classList.toggle('hidden', !isCollapsed);
         });
 
-        // Resume Project Creation/Selection
         newApplicationBtn.addEventListener('click', () => {
             switchTab('applications');
             currentAppId = null;
@@ -1610,7 +1710,7 @@
             jobLinkInput.value = '';
             createAppStatus.textContent = '';
             companyNameInput.focus();
-            renderApplicationList(allApplications);
+            renderApplicationList();
         });
         createApplicationBtn.addEventListener('click', async () => {
             const company = companyNameInput.value.trim();
@@ -1623,27 +1723,17 @@
             try {
                 const payload = { companyName: company, roleTitle: role, jobId: jobIdInput.value.trim(), jobLink: jobLinkInput.value.trim() };
                 const data = await apiCall('/applications', 'POST', payload);
-                const newApp = { appId: data.appId, company: company, role: role, jobId: payload.jobId, createdAt: Date.now() / 1000 };
-                allApplications.unshift(newApp);
+                await refreshApplicationList();
                 handleAppSelection(data.appId);
-                showStatusMessage(createAppStatus, ''); // Clear status on success
+                showStatusMessage(createAppStatus, '');
             } catch (error) {
                 showStatusMessage(createAppStatus, `Creation failed: ${error.message}`, true);
             } finally {
                 createApplicationBtn.disabled = false;
             }
         });
-        searchApplications.addEventListener('input', (e) => {
-            const searchTerm = e.target.value.toLowerCase();
-            const filteredApps = allApplications.filter(app => 
-                app.company.toLowerCase().includes(searchTerm) || 
-                app.role.toLowerCase().includes(searchTerm) ||
-                (app.jobId && app.jobId.toLowerCase().includes(searchTerm))
-            );
-            renderApplicationList(filteredApps);
-        });
+        searchApplications.addEventListener('input', renderApplicationList);
         
-        // Workspace Listeners
         saveJDBtn.addEventListener('click', async () => {
             if (!currentAppId) return;
             const htmlContent = jobDescriptionEditor.innerHTML.trim();
@@ -1655,6 +1745,7 @@
                 await apiCall(`/applications/${currentAppId}/job-description`, 'POST', { htmlContent });
                 generateResumeBtn.disabled = false;
                 showStatusMessage(jdStatus, '✅ Job Description saved!');
+                await refreshApplicationList();
             } catch (error) {
                 showStatusMessage(jdStatus, `Save failed: ${error.message}`, true);
             }
@@ -1686,6 +1777,7 @@
                 updateVersionSelector(result.resumeVersions, result.filename, hasFinalized);
                 updateUIWithNewResume(result.resumeYaml, false);
                 showStatusMessage(yamlStatus, `✅ ${result.message}`);
+                await refreshApplicationList();
             } catch (error) {
                 showStatusMessage(yamlStatus, `Generation failed: ${error.message}`, true);
             } finally {
@@ -1713,6 +1805,7 @@
                 
                 showStatusMessage(finalizeStatus, `✅ ${response.message}`);
                 await selectApplicationForResume(currentAppId);
+                await refreshApplicationList();
 
             } catch(e) {
                 showStatusMessage(finalizeStatus, `Finalizing failed: ${e.message}`, true);
@@ -1769,7 +1862,6 @@
             showStatusMessage(configStatus, 'Formatting reset to project default.');
         });
 
-        // Cover Letter Listeners
         generateCoverLetterBtn.addEventListener('click', async () => {
             if (!currentAppId) return;
             clSpinner.classList.remove('hidden');
@@ -1784,6 +1876,7 @@
                 coverLetterEditor.value = response.cover_letter_body.replace(/\\n/g, '\n');
                 showStatusMessage(clGenStatus, '✅ Generation successful!');
                 saveCoverLetterBtn.disabled = false;
+                await refreshApplicationList();
             } catch (error) {
                 showStatusMessage(clGenStatus, `Generation failed: ${error.message}`, true);
             } finally {
@@ -1799,19 +1892,7 @@
                 const payload = { coverLetterText: coverLetterEditor.value };
                 await apiCall(`/applications/${currentAppId}/save-cover-letter`, 'POST', payload);
                 showStatusMessage(clSaveStatus, '✅ Saved! PDF has been generated.');
-                // Optionally, refresh the PDF viewer if you add one
-                const details = await apiCall(`/applications/${currentAppId}`);
-                if (details.coverLetter.pdfUrl) {
-                    const pdfIframe = document.createElement('iframe');
-                    pdfIframe.className = 'w-full h-full';
-                    pdfIframe.src = `${API_BASE_URL}${details.coverLetter.pdfUrl}?t=${Date.now()}`;
-                    const container = document.getElementById('coverLetterEditor').parentElement;
-                    const oldIframe = container.querySelector('iframe');
-                    if(oldIframe) oldIframe.remove();
-                    // This is a placeholder for where a PDF viewer would go.
-                    // For now, we just log that it was successful.
-                    console.log("PDF updated. URL:", pdfIframe.src);
-                }
+                await refreshApplicationList();
             } catch (error) {
                 showStatusMessage(clSaveStatus, `Save failed: ${error.message}`, true);
             } finally {
@@ -1819,7 +1900,6 @@
             }
         });
         
-        // Email Tab Listeners
         generateEmailBtn.addEventListener('click', async () => {
             if (!currentAppId) return;
             emailSpinner.classList.remove('hidden');
@@ -1835,6 +1915,7 @@
                 showStatusMessage(emailGenStatus, '✅ Email generated & saved!');
                 trackEmailBtn.disabled = false;
                 openEmailClientBtn.disabled = false;
+                await refreshApplicationList();
             } catch (error) {
                 showStatusMessage(emailGenStatus, `Error: ${error.message}`, true);
             } finally {
@@ -1869,8 +1950,6 @@
             window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
         });
 
-
-        // Tracker Tab Listeners
         trackerSubTabs.addEventListener('click', (e) => {
             if (e.target.tagName === 'BUTTON') {
                 switchTrackerTab(e.target.dataset.trackerTab);
@@ -1882,16 +1961,96 @@
             await trackerApi.addApp(newApp);
             trackerForm.reset();
             await refreshAllTrackers();
-            await initializeApp(); // Re-initialize to fetch new projects
+            await refreshApplicationList();
         });
         applicationsTrackerTableBody.addEventListener('change', handleTrackerUpdate);
         applicationsTrackerTableBody.addEventListener('focusout', (e) => { if (e.target.tagName === 'INPUT') handleTrackerUpdate(e); });
-        applicationsTrackerTableBody.addEventListener('click', handleTrackerDelete);
+        applicationsTrackerTableBody.addEventListener('click', (e) => {
+            if (e.target.closest('.delete-btn')) {
+                handleTrackerDelete(e);
+            } else if (e.target.closest('.goto-app-btn')) {
+                const appId = e.target.closest('tr').dataset.appid;
+                if (appId) {
+                    switchTab('applications');
+                    handleAppSelection(appId);
+                }
+            }
+        });
         emailsTrackerTableBody.addEventListener('change', handleTrackerUpdate);
         emailsTrackerTableBody.addEventListener('focusout', (e) => { if (e.target.tagName === 'INPUT') handleTrackerUpdate(e); });
         emailsTrackerTableBody.addEventListener('click', handleTrackerDelete);
 
-        // Favorites Tab Listeners
+        function updateAppSortIcons() {
+            document.querySelectorAll('.sort-icon-btn').forEach(btn => {
+                const field = btn.dataset.sort;
+                const indicator = btn.querySelector('.sort-indicator');
+                if (field === appSortConfig.field) {
+                    btn.classList.add('active');
+                    indicator.textContent = appSortConfig.direction === 'asc' ? '▲' : '▼';
+                } else {
+                    btn.classList.remove('active');
+                    indicator.textContent = '';
+                }
+            });
+        }
+
+        document.getElementById('sortAppByDateBtn').addEventListener('click', (e) => {
+            const btn = e.currentTarget;
+            const field = btn.dataset.sort;
+            if (appSortConfig.field === field) {
+                appSortConfig.direction = appSortConfig.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                appSortConfig.field = field;
+                appSortConfig.direction = 'desc';
+            }
+            updateAppSortIcons();
+            renderApplicationList();
+        });
+        document.getElementById('sortAppByCompanyBtn').addEventListener('click', (e) => {
+            const btn = e.currentTarget;
+            const field = btn.dataset.sort;
+            if (appSortConfig.field === field) {
+                appSortConfig.direction = appSortConfig.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                appSortConfig.field = field;
+                appSortConfig.direction = 'asc';
+            }
+            updateAppSortIcons();
+            renderApplicationList();
+        });
+        
+        function updateTrackerSortIcons() {
+            document.querySelectorAll('#applicationsTracker .sort-icon').forEach(icon => {
+                const field = icon.dataset.sort;
+                if (trackerSortConfig.field === field) {
+                    icon.classList.add('active');
+                    icon.innerHTML = trackerSortConfig.direction === 'asc' ? '▲' : '▼';
+                } else {
+                    icon.classList.remove('active');
+                    icon.innerHTML = '&#8693;';
+                }
+            });
+        }
+
+        document.querySelector('#applicationsTracker thead').addEventListener('click', (e) => {
+            const sortIcon = e.target.closest('.sort-icon');
+            if (sortIcon) {
+                const field = sortIcon.dataset.sort;
+                if (trackerSortConfig.field === field) {
+                    trackerSortConfig.direction = trackerSortConfig.direction === 'asc' ? 'desc' : 'asc';
+                } else {
+                    trackerSortConfig.field = field;
+                    trackerSortConfig.direction = 'desc';
+                }
+                updateTrackerSortIcons();
+                renderApplicationsTable();
+            }
+        });
+
+        ['filterCompany', 'filterRole', 'filterJobId', 'filterContact', 'filterStatus'].forEach(id => {
+            document.getElementById(id).addEventListener('input', renderApplicationsTable);
+        });
+
         favoritesForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const companyName = favoriteCompanyInput.value.trim();
