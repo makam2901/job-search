@@ -77,6 +77,7 @@ class EmailGenerationRequest(BaseModel):
 class CoverLetterGenerationRequest(BaseModel):
     additionalDetails: Optional[str] = ""
     modelProvider: str
+    contactEmail: Optional[str] = ""
 
 class SaveCoverLetterRequest(BaseModel):
     coverLetterText: str
@@ -348,6 +349,7 @@ def get_application_details(app_id: str):
             "generatedBody": details.get("generatedCoverLetterBody", ""),
             "pdfUrl": f"/applications/{app_id}/cover-letter-pdf" if finalized_cover_letter_file and os.path.exists(os.path.join(app_path, finalized_cover_letter_file)) else None
         },
+        "selectedContactEmail": details.get("selectedContactEmail", ""),
         "finalizedPdfUrl": f"/applications/{app_id}/finalized-pdf" if os.path.exists(finalized_pdf_path) else None
     }
 
@@ -630,7 +632,8 @@ def generate_cover_letter(app_id: str, request: CoverLetterGenerationRequest):
 
         update_app_details(app_path, {
             "coverLetterAdditionalDetails": request.additionalDetails,
-            "generatedCoverLetterBody": body
+            "generatedCoverLetterBody": body,
+            "selectedContactEmail": request.contactEmail
         })
         update_application_timestamp(app_id)
         return {"cover_letter_body": body}
@@ -648,7 +651,18 @@ def save_cover_letter(app_id: str, request: SaveCoverLetterRequest):
         with open(BASE_RESUME_PATH, 'r', encoding='utf-8') as f:
             base_resume_data = yaml.safe_load(f)
         
+        # Get the selected email from app details, or fall back to base resume
+        details_path = os.path.join(app_path, "app_details.json")
+        selected_email = ""
+        if os.path.exists(details_path):
+            with open(details_path, 'r') as f:
+                details = json.load(f)
+                selected_email = details.get("selectedContactEmail", "")
+        
         contact_info = base_resume_data.get('contact', {})
+        if selected_email:
+            contact_info['email'] = selected_email
+        
         candidate_name = base_resume_data.get('name', 'Candidate')
         safe_name = "".join(c if c.isalnum() else '_' for c in candidate_name)
         
@@ -737,11 +751,8 @@ def get_tracker_applications():
     for app in apps_data:
         app_id = get_app_id(app.get("company"), app.get("role"), app.get("jobId"))
         app_path = os.path.join(APPLICATIONS_DIR, app_id)
-        if os.path.isdir(app_path):
-            mtime = os.path.getmtime(app_path)
-            app["lastUpdatedAt"] = datetime.fromtimestamp(mtime).isoformat()
-        else:
-            app["lastUpdatedAt"] = app.get("createdAt")
+        mtime = os.path.getmtime(app_path)
+        app["lastUpdatedAt"] = datetime.fromtimestamp(mtime).isoformat()
     return apps_data
 
 @app.post("/tracker/applications", response_model=TrackerApplicationItem)

@@ -57,6 +57,14 @@
         .sort-icon.active { opacity: 1; color: #3b82f6; font-weight: bold;}
         .sort-icon-btn { cursor: pointer; opacity: 0.6; }
         .sort-icon-btn.active { opacity: 1; color: #3b82f6; font-weight: 600; }
+        
+        #coverLetterPreview {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+        }
+        #coverLetterPreview p {
+            margin-bottom: 0.75rem;
+        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800 overflow-hidden">
@@ -278,6 +286,13 @@
                             <div id="clJobDescription" contenteditable="true" class="w-full border border-gray-300 rounded-lg p-4 min-h-[150px] overflow-y-auto bg-gray-50"></div>
                         </div>
                         <div>
+                            <label for="clContactEmail" class="block text-sm font-medium text-gray-700">Contact Email</label>
+                            <select id="clContactEmail" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                <option value="makamsrimanikesh@outlook.com">makamsrimanikesh@outlook.com</option>
+                                <option value="srimanikesh@outlook.com">srimanikesh@outlook.com</option>
+                            </select>
+                        </div>
+                        <div>
                             <label for="clAdditionalDetails" class="block text-sm font-medium text-gray-700">Additional Details / Notes for AI</label>
                             <textarea id="clAdditionalDetails" rows="6" class="mt-1 w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., Emphasize my experience with cloud platforms."></textarea>
                         </div>
@@ -308,7 +323,9 @@
                             </div>
                         </div>
                         <div class="flex-grow flex flex-col gap-4 overflow-hidden">
-                             <textarea id="coverLetterEditor" class="w-full flex-grow border border-gray-200 rounded-md p-3 focus:ring-blue-500 focus:border-blue-500 custom-scrollbar" placeholder="Generated cover letter text will appear here..."></textarea>
+                            <div id="coverLetterPreview" class="w-full flex-grow border border-gray-200 rounded-md p-3 bg-white overflow-y-auto custom-scrollbar min-h-[300px]">
+                                <p class="text-gray-500 text-center mt-20">Generated cover letter will appear here...</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -658,8 +675,10 @@
         const coverLetterWorkspace = document.getElementById('coverLetterWorkspace');
         const coverLetterWorkspaceTitle = document.getElementById('coverLetterWorkspaceTitle');
         const clJobDescription = document.getElementById('clJobDescription');
+        const clContactEmail = document.getElementById('clContactEmail');
         const clAdditionalDetails = document.getElementById('clAdditionalDetails');
         const clModelProvider = document.getElementById('clModelProvider');
+        const coverLetterPreview = document.getElementById('coverLetterPreview');
         const generateCoverLetterBtn = document.getElementById('generateCoverLetterBtn');
         const clSpinner = document.getElementById('clSpinner');
         const clGenStatus = document.getElementById('clGenStatus');
@@ -746,6 +765,25 @@
             setTimeout(() => {
                 element.textContent = '';
             }, duration);
+        }
+
+        function renderCoverLetterPreview(coverLetterBody, selectedEmail, candidateName = 'Sri Manikesh Makam') {
+            if (!coverLetterBody) {
+                coverLetterPreview.innerHTML = '<p class="text-gray-500 text-center mt-20">Generated cover letter will appear here...</p>';
+                return;
+            }
+
+            const preview = `
+                <div class="text-sm leading-relaxed space-y-4">
+                    ${coverLetterBody.replace(/\n\n/g, '</div><div class="text-sm leading-relaxed space-y-4">').replace(/\n/g, '<br>')}
+                    <div class="mt-8">
+                        <p>Yours sincerely,</p>
+                        <p class="font-semibold mt-2">${candidateName}</p>
+                        <p class="text-blue-600 mt-1">${selectedEmail}</p>
+                    </div>
+                </div>
+            `;
+            coverLetterPreview.innerHTML = preview;
         }
         
         function switchTab(tabName) {
@@ -1511,7 +1549,23 @@
 
                 if (details.coverLetter) {
                     clAdditionalDetails.value = details.coverLetter.additionalDetails || '';
-                    coverLetterEditor.value = (details.coverLetter.generatedBody || '').replace(/\\n/g, '\n');
+                    const coverLetterBody = (details.coverLetter.generatedBody || '').replace(/\\n/g, '\n');
+                    coverLetterEditor.value = coverLetterBody;
+                    renderCoverLetterPreview(coverLetterBody, clContactEmail.value);
+                }
+
+                // Set the selected email if available, otherwise use the current resume's email
+                if (details.selectedContactEmail) {
+                    clContactEmail.value = details.selectedContactEmail;
+                } else if (details.resumeYaml) {
+                    try {
+                        const resumeData = jsyaml.load(details.resumeYaml);
+                        if (resumeData.contact && resumeData.contact.email) {
+                            clContactEmail.value = resumeData.contact.email;
+                        }
+                    } catch (e) {
+                        console.log('Could not parse resume YAML for email');
+                    }
                 }
 
                 if (details.finalizedResumeYaml) {
@@ -1862,6 +1916,14 @@
             showStatusMessage(configStatus, 'Formatting reset to project default.');
         });
 
+        // Update cover letter preview when email changes
+        clContactEmail.addEventListener('change', () => {
+            const coverLetterBody = coverLetterEditor.value;
+            if (coverLetterBody) {
+                renderCoverLetterPreview(coverLetterBody, clContactEmail.value);
+            }
+        });
+
         generateCoverLetterBtn.addEventListener('click', async () => {
             if (!currentAppId) return;
             clSpinner.classList.remove('hidden');
@@ -1870,10 +1932,13 @@
             try {
                 const payload = {
                     additionalDetails: clAdditionalDetails.value.trim(),
-                    modelProvider: clModelProvider.value
+                    modelProvider: clModelProvider.value,
+                    contactEmail: clContactEmail.value
                 };
                 const response = await apiCall(`/applications/${currentAppId}/generate-cover-letter`, 'POST', payload);
-                coverLetterEditor.value = response.cover_letter_body.replace(/\\n/g, '\n');
+                const coverLetterBody = response.cover_letter_body.replace(/\\n/g, '\n');
+                coverLetterEditor.value = coverLetterBody;
+                renderCoverLetterPreview(coverLetterBody, clContactEmail.value);
                 showStatusMessage(clGenStatus, '✅ Generation successful!');
                 saveCoverLetterBtn.disabled = false;
                 await refreshApplicationList();
@@ -1889,7 +1954,9 @@
             if (!currentAppId) return;
             saveCoverLetterBtn.disabled = true;
             try {
-                const payload = { coverLetterText: coverLetterEditor.value };
+                // Get the complete cover letter content from the preview
+                const completeCoverLetter = coverLetterPreview.innerText;
+                const payload = { coverLetterText: completeCoverLetter };
                 await apiCall(`/applications/${currentAppId}/save-cover-letter`, 'POST', payload);
                 showStatusMessage(clSaveStatus, '✅ Saved! PDF has been generated.');
                 await refreshApplicationList();
